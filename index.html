@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Drying System</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- MQTT.js via WebSocket (untuk browser) -->
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{background:#0a0a0a;color:white;overflow-x:hidden;min-height:100vh;}
+.container{display:flex;min-height:100vh;}
+
+/* OVERLAY */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99;}
+.overlay.show{display:block;}
+
+/* SIDEBAR */
+.sidebar{width:240px;background:#111111;border-right:1px solid rgba(255,255,255,0.06);padding:24px 16px;display:flex;flex-direction:column;justify-content:space-between;flex-shrink:0;transition:transform 0.35s cubic-bezier(.4,0,.2,1);z-index:100;}
+.logo h1{font-size:26px;font-weight:700;line-height:1.2;color:#a855f7;margin-bottom:4px;}
+.logo p{color:#6b7280;font-size:12px;}
+.menu{margin-top:32px;display:flex;flex-direction:column;gap:6px;}
+.menu-item{width:100%;padding:12px 16px;border-radius:10px;border:none;background:transparent;color:#9ca3af;font-size:14px;cursor:pointer;transition:0.2s;text-align:left;display:flex;align-items:center;gap:12px;}
+.menu-item:hover{background:rgba(168,85,247,0.1);color:white;}
+.menu-item.active{background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;font-weight:600;}
+.menu-item svg{width:18px;height:18px;flex-shrink:0;}
+.status-box{background:rgba(255,255,255,0.03);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,0.06);}
+.status-online{font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px;}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.status-dot.green{background:#4ade80;animation:blink 2s infinite;}
+.status-dot.yellow{background:#facc15;animation:blink 1s infinite;}
+.status-dot.red{background:#f87171;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.status-box p{font-size:12px;color:#6b7280;margin-top:6px;padding-left:14px;}
+
+/* TOPBAR */
+.topbar{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:#111111;border-bottom:1px solid rgba(255,255,255,0.06);align-items:center;justify-content:space-between;padding:0 16px;z-index:98;}
+.topbar-title{font-size:15px;font-weight:700;color:#a855f7;}
+.hamburger{background:none;border:none;color:white;font-size:24px;cursor:pointer;}
+
+/* MAIN */
+.main{flex:1;padding:28px;overflow-y:auto;background:#0d0d0d;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* HEADER */
+.dashboard-toprow{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:16px;}
+.dashboard-toprow-title h1{font-size:26px;font-weight:700;}
+.dashboard-toprow-title p{color:#6b7280;font-size:13px;margin-top:2px;}
+.top-cards{display:flex;gap:12px;flex-wrap:wrap;}
+.top-card{background:#161616;border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:16px 22px;min-width:150px;}
+.top-card-label{font-size:11px;color:#a855f7;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.top-card-value{font-size:18px;font-weight:700;margin-bottom:2px;}
+.top-card-sub{font-size:12px;color:#6b7280;}
+
+/* CONN BAR */
+.conn-bar{display:flex;align-items:center;gap:10px;background:#161616;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:10px 16px;margin-bottom:20px;font-size:13px;}
+.conn-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.conn-dot.connected{background:#4ade80;animation:blink 2s infinite;}
+.conn-dot.disconnected{background:#f87171;}
+.conn-dot.connecting{background:#facc15;animation:blink 1s infinite;}
+
+/* SENSOR CARDS */
+.sensor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+.sensor-card{background:#161616;border-radius:16px;padding:22px;border:1px solid rgba(255,255,255,0.07);transition:0.25s;}
+.sensor-card:hover{border-color:rgba(168,85,247,0.3);transform:translateY(-2px);}
+.sensor-card-header{display:flex;align-items:center;gap:8px;margin-bottom:18px;}
+.sensor-card-header svg{width:18px;height:18px;color:#a855f7;}
+.sensor-card-header span{font-size:13px;font-weight:600;color:#a855f7;letter-spacing:0.5px;text-transform:uppercase;}
+.sensor-value-big{font-size:44px;font-weight:700;margin-bottom:12px;line-height:1;}
+.sensor-badge{display:inline-block;padding:5px 14px;border-radius:8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+.badge-dingin{background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);}
+.badge-normal{background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);}
+.badge-panas{background:rgba(249,115,22,0.15);color:#fb923c;border:1px solid rgba(249,115,22,0.3);}
+.badge-aman{background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);}
+.badge-gerimis{background:rgba(234,179,8,0.15);color:#facc15;border:1px solid rgba(234,179,8,0.3);}
+.badge-hujan{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);}
+.badge-gelap{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);}
+.badge-mendung{background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.3);}
+.badge-terang{background:rgba(250,204,21,0.15);color:#fde047;border:1px solid rgba(250,204,21,0.3);}
+
+/* SYSTEM GRID */
+.system-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+.system-card{background:#161616;border-radius:16px;padding:22px;border:1px solid rgba(255,255,255,0.07);}
+.system-card-title{font-size:14px;font-weight:700;color:#a855f7;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
+
+/* TOGGLE */
+.mode-toggle{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;}
+.mode-toggle span{color:#6b7280;}
+.mode-toggle span.active-mode{color:white;}
+.toggle-switch{position:relative;width:42px;height:22px;cursor:pointer;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:#7c3aed;border-radius:22px;transition:0.3s;}
+.toggle-slider::before{content:'';position:absolute;width:16px;height:16px;background:white;border-radius:50%;top:3px;left:3px;transition:0.3s;}
+.toggle-switch input:checked + .toggle-slider::before{transform:translateX(20px);}
+.toggle-switch input:not(:checked) + .toggle-slider{background:#374151;}
+
+/* JEMURAN */
+.jemuran-visual{display:flex;justify-content:center;margin:10px 0 14px;}
+.position-badge{text-align:center;font-size:13px;font-weight:600;margin-bottom:14px;padding:4px 14px;border-radius:8px;display:inline-block;border:1px solid;}
+.jemuran-info-row{display:flex;justify-content:space-between;font-size:13px;color:#9ca3af;margin-bottom:8px;}
+.jemuran-info-row span:last-child{color:white;font-weight:600;}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+.btn-masuk{padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#b91c1c,#ef4444);color:white;font-size:13px;font-weight:700;cursor:pointer;transition:0.2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.btn-keluar{padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#065f46,#10b981);color:white;font-size:13px;font-weight:700;cursor:pointer;transition:0.2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.btn-masuk:hover,.btn-keluar:hover{transform:scale(1.03);}
+.btn-masuk:disabled,.btn-keluar:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+
+/* FAN */
+.fan-container{display:flex;flex-direction:column;align-items:center;padding:10px 0 14px;}
+.fan-icon-wrap{width:100px;height:100px;border-radius:50%;border:3px solid rgba(6,182,212,0.4);display:flex;align-items:center;justify-content:center;margin-bottom:16px;background:rgba(6,182,212,0.05);}
+.fan-icon-wrap svg{width:52px;height:52px;color:#06b6d4;}
+.fan-spinning .fan-icon-wrap svg{animation:spin 1.2s linear infinite;}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.fan-status-text{font-size:16px;font-weight:700;margin-bottom:4px;}
+.fan-sub{font-size:12px;color:#6b7280;text-align:center;}
+.btn-fan{width:100%;padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;font-size:13px;font-weight:700;cursor:pointer;transition:0.2s;margin-top:14px;}
+.btn-fan:hover{transform:scale(1.02);}
+.btn-fan:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+
+/* CHART & LOG */
+.chart-card{background:#161616;border-radius:16px;padding:22px;border:1px solid rgba(255,255,255,0.07);margin-bottom:24px;}
+.chart-card h2{font-size:15px;font-weight:700;margin-bottom:18px;}
+.log-card{background:#161616;border-radius:16px;padding:22px;border:1px solid rgba(255,255,255,0.07);}
+.log-card h2{font-size:15px;font-weight:700;margin-bottom:16px;}
+.log-item{background:#0d0d0d;border-left:3px solid #7c3aed;padding:10px 14px;border-radius:8px;margin-bottom:10px;font-size:13px;}
+.log-time{color:#6b7280;font-size:11px;margin-top:4px;}
+
+/* MONITORING */
+.page-header{margin-bottom:28px;}
+.page-header h1{font-size:28px;font-weight:700;margin-bottom:4px;}
+.page-header p{color:#6b7280;font-size:14px;}
+.monitor-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+.monitor-card{background:#161616;border-radius:16px;padding:22px;border:1px solid rgba(255,255,255,0.07);}
+.monitor-card-title{display:flex;align-items:center;gap:8px;margin-bottom:18px;}
+.monitor-card-title svg{width:18px;height:18px;color:#a855f7;}
+.monitor-card-title span{font-size:15px;font-weight:700;color:#a855f7;}
+.data-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px;}
+.data-row:last-child{border-bottom:none;}
+.data-label{color:#6b7280;}
+.thr-red{color:#f87171;font-weight:600;}
+.thr-yellow{color:#facc15;font-weight:600;}
+.thr-cyan{color:#22d3ee;font-weight:600;}
+
+/* HISTORY */
+.history-wrap{overflow-x:auto;}
+.history-table{width:100%;border-collapse:collapse;font-size:13px;}
+.history-table th{text-align:left;padding:10px 14px;color:#a855f7;border-bottom:1px solid rgba(255,255,255,0.08);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;}
+.history-table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.04);color:#e5e7eb;}
+.history-table tr:hover td{background:rgba(255,255,255,0.02);}
+.badge{padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;text-transform:uppercase;}
+.badge-masuk{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.25);}
+.badge-keluar{background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.25);}
+.badge-on{background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.25);}
+.badge-off{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.25);}
+
+/* MOBILE */
+@media(max-width:768px){
+  .topbar{display:flex;}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .main{padding:16px;padding-top:72px;}
+  .sensor-grid{grid-template-columns:1fr;}
+  .system-grid{grid-template-columns:1fr;}
+  .monitor-grid{grid-template-columns:1fr;}
+  .dashboard-toprow{flex-direction:column;}
+  .top-cards{width:100%;}
+  .top-card{flex:1;}
+}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+<div class="topbar">
+  <button class="hamburger" onclick="toggleSidebar()">☰</button>
+  <span class="topbar-title">SMART DRYING SYSTEM</span>
+  <span style="width:40px;"></span>
+</div>
+
+<div class="container">
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div>
+    <div class="logo">
+      <h1>SMART<br>DRYING<br>SYSTEM</h1>
+      <p>IoT via MQTT</p>
+    </div>
+    <div class="menu">
+      <button class="menu-item active" onclick="showPage('dashboard',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="menu-item" onclick="showPage('monitoring',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Monitoring
+      </button>
+      <button class="menu-item" onclick="showPage('history',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        History
+      </button>
+    </div>
+  </div>
+  <div class="status-box">
+    <div class="status-online">
+      <span class="status-dot green" id="sidebarDot"></span>
+      <span id="sidebarStatus">Connecting...</span>
+    </div>
+    <p id="sidebarBroker">broker.hivemq.com</p>
+    <p id="sidebarLastMsg">Menunggu data ESP32...</p>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div class="dashboard-toprow">
+    <div class="dashboard-toprow-title">
+      <h1>SMART DRYING SYSTEM</h1>
+      <p>Realtime IoT Monitoring — MQTT</p>
+    </div>
+    <div class="top-cards">
+      <div class="top-card">
+        <div class="top-card-label">WEATHER</div>
+        <div class="top-card-value" id="weatherVal">--</div>
+        <div class="top-card-sub" id="weatherTemp">-- °C</div>
+      </div>
+      <div class="top-card">
+        <div class="top-card-label">FUZZY MODE</div>
+        <div class="top-card-value">ACTIVE</div>
+        <div class="top-card-sub">Auto System Running</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="conn-bar">
+    <div class="conn-dot connecting" id="connDot"></div>
+    <span id="connText">Menghubungkan ke MQTT broker...</span>
+  </div>
+
+  <div class="sensor-grid">
+    <div class="sensor-card">
+      <div class="sensor-card-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+        <span>TEMPERATURE</span>
+      </div>
+      <div class="sensor-value-big" id="tempValue">--<span style="font-size:22px;font-weight:400;">°C</span></div>
+      <div id="tempBadge" class="sensor-badge badge-dingin">--</div>
+    </div>
+    <div class="sensor-card">
+      <div class="sensor-card-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9"/><polyline points="16 13 12 17 8 13"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <span>Rain Sensor</span>
+      </div>
+      <div class="sensor-value-big" id="rainValue">-- <span style="font-size:16px;color:#9ca3af;">avg</span></div>
+      <div id="rainBadge" class="sensor-badge badge-aman">--</div>
+    </div>
+    <div class="sensor-card">
+      <div class="sensor-card-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <span>LIGHT SENSOR</span>
+      </div>
+      <div class="sensor-value-big" id="ldrValue">--</div>
+      <div id="ldrBadge" class="sensor-badge badge-gelap">--</div>
+    </div>
+  </div>
+
+  <div class="system-grid">
+    <!-- JEMURAN -->
+    <div class="system-card">
+      <div class="system-card-title">
+        STATUS JEMURAN
+        <div class="mode-toggle">
+          <span id="jemuranAutoLabel" class="active-mode">AUTO</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="jemuranModeToggle" onchange="toggleJemuranMode()" checked>
+            <span class="toggle-slider"></span>
+          </label>
+          <span id="jemuranManualLabel">MANUAL</span>
+        </div>
+      </div>
+      <div class="jemuran-visual">
+        <svg id="jemuranSVG" width="240" height="155" viewBox="0 0 240 155">
+          <rect x="12" y="20" width="8" height="120" rx="3" fill="#4c1d95"/>
+          <rect x="8" y="16" width="16" height="7" rx="2" fill="#7c3aed"/>
+          <rect x="220" y="20" width="8" height="120" rx="3" fill="#4c1d95"/>
+          <rect x="216" y="16" width="16" height="7" rx="2" fill="#7c3aed"/>
+          <line x1="20" y1="34" x2="220" y2="34" stroke="#a855f7" stroke-width="2.5" stroke-linecap="round"/>
+          <g id="baju1" style="transition:all 0.7s ease;"><line x1="50" y1="34" x2="50" y2="26" stroke="#a855f7" stroke-width="1.5"/><polygon points="50,26 37,43 42,43 42,72 58,72 58,43 63,43" fill="#60a5fa" stroke="#3b82f6" stroke-width="1"/></g>
+          <g id="baju2" style="transition:all 0.7s ease;"><line x1="88" y1="34" x2="88" y2="26" stroke="#a855f7" stroke-width="1.5"/><polygon points="88,26 75,43 80,43 80,72 96,72 96,43 101,43" fill="#818cf8" stroke="#6366f1" stroke-width="1"/></g>
+          <g id="baju3" style="transition:all 0.7s ease;"><line x1="126" y1="34" x2="126" y2="26" stroke="#a855f7" stroke-width="1.5"/><rect x="116" y="26" width="20" height="24" rx="2" fill="#f87171" stroke="#ef4444" stroke-width="1"/><rect x="116" y="50" width="8" height="20" rx="2" fill="#f87171" stroke="#ef4444" stroke-width="1"/><rect x="128" y="50" width="8" height="20" rx="2" fill="#f87171" stroke="#ef4444" stroke-width="1"/></g>
+          <g id="baju4" style="transition:all 0.7s ease;"><line x1="164" y1="34" x2="164" y2="26" stroke="#a855f7" stroke-width="1.5"/><polygon points="164,26 153,41 157,41 157,68 171,68 171,41 175,41" fill="#4ade80" stroke="#22c55e" stroke-width="1"/></g>
+          <g id="baju5" style="transition:all 0.7s ease;"><line x1="198" y1="34" x2="198" y2="26" stroke="#a855f7" stroke-width="1.5"/><polygon points="198,26 188,40 192,40 192,65 204,65 204,40 208,40" fill="#fbbf24" stroke="#f59e0b" stroke-width="1"/></g>
+          <text id="jemuranSVGLabel" x="120" y="148" text-anchor="middle" font-size="13" font-weight="700" font-family="Poppins,sans-serif" fill="#4ade80">KELUAR</text>
+        </svg>
+      </div>
+      <div style="text-align:center;margin-bottom:12px;">
+        <div class="position-badge" id="positionBadge" style="color:#facc15;background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.3);">POSITION: KELUAR</div>
+      </div>
+      <div class="jemuran-info-row"><span>Target:</span><span id="jemuranTarget">--</span></div>
+      <div class="jemuran-info-row"><span>Posisi ESP32:</span><span id="jemuranEsp32Pos">--</span></div>
+      <div class="jemuran-info-row"><span id="jemuranModeInfo" style="font-size:12px;color:#6b7280;">Mode AUTO — dikontrol fuzzy ESP32</span></div>
+      <div class="btn-row">
+        <button class="btn-masuk" id="btnMasuk" onclick="cmdJemuran('masuk')" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg> MASUK
+        </button>
+        <button class="btn-keluar" id="btnKeluar" onclick="cmdJemuran('keluar')" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg> KELUAR
+        </button>
+      </div>
+    </div>
+
+    <!-- FAN -->
+    <div class="system-card">
+      <div class="system-card-title">
+        EXHAUST FAN
+        <div class="mode-toggle">
+          <span id="fanAutoLabel" class="active-mode">AUTO</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="fanModeToggle" onchange="toggleFanMode()" checked>
+            <span class="toggle-slider"></span>
+          </label>
+          <span id="fanManualLabel">MANUAL</span>
+        </div>
+      </div>
+      <div class="fan-container" id="fanContainer">
+        <div class="fan-icon-wrap">
+          <svg id="fanSVG" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C9.8 2 8 3.8 8 6c0 1.7.9 3.1 2.3 3.8C9.1 8.7 7.5 8 5.5 8 3.5 8 2 9.5 2 11.5c0 2.4 2.3 4.2 4.7 3.6C5.5 16.2 5 17.5 5 19c0 1.7 1.3 3 3 3 1.2 0 2.3-.7 2.8-1.8.5 1.1 1.6 1.8 2.8 1.8 1.7 0 3-1.3 3-3 0-1.5-.5-2.8-1.7-3.9 2.4.6 4.7-1.2 4.7-3.6 0-2-1.5-3.5-3.5-3.5-2 0-3.6.7-4.8 1.8C12.9 9.1 13.8 7.7 13.8 6c0-2.2-1.8-4-4-4z"/>
+          </svg>
+        </div>
+        <div class="fan-status-text" id="fanStatusText" style="color:#f87171;">EXHAUST OFF</div>
+        <div class="fan-sub" id="fanSubText">Menunggu data ESP32...</div>
+        <div class="fan-sub" style="margin-top:4px;" id="fanPwmText">PWM: --</div>
+      </div>
+      <button class="btn-fan" id="btnFan" onclick="cmdFan()" disabled>ON / OFF FAN</button>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <h2>📈 REALTIME MONITORING</h2>
+    <canvas id="chartDashboard" height="80"></canvas>
+  </div>
+
+  <div class="log-card">
+    <h2>🔔 NOTIFICATION LOG</h2>
+    <div id="logList">
+      <div class="log-item"><div>System started — menunggu koneksi MQTT</div><div class="log-time" id="logInitTime"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MONITORING -->
+<div id="page-monitoring" class="page">
+  <div class="page-header"><h1>MONITORING</h1><p>Detail sensor & status realtime via MQTT</p></div>
+  <div class="monitor-grid">
+    <div class="monitor-card">
+      <div class="monitor-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+        <span>Temperature</span>
+      </div>
+      <div class="data-row"><span class="data-label">Nilai saat ini</span><span id="mon_temp">-- °C</span></div>
+      <div class="data-row"><span class="data-label">Min hari ini</span><span id="mon_temp_min">-- °C</span></div>
+      <div class="data-row"><span class="data-label">Max hari ini</span><span id="mon_temp_max">-- °C</span></div>
+      <div class="data-row"><span class="data-label">Status</span><span id="mon_temp_status" class="sensor-badge badge-normal" style="font-size:11px;">--</span></div>
+    </div>
+    <div class="monitor-card">
+      <div class="monitor-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9"/><polyline points="16 13 12 17 8 13"/></svg>
+        <span>Rain Sensor</span>
+      </div>
+      <div class="data-row"><span class="data-label">Rata-rata Sensor</span><span id="mon_rain">--</span></div>
+      <div class="data-row"><span class="data-label">Threshold hujan</span><span class="thr-red">&lt; 1200</span></div>
+      <div class="data-row"><span class="data-label">Threshold gerimis</span><span class="thr-yellow">1200 – 2800</span></div>
+      <div class="data-row"><span class="data-label">Status</span><span id="mon_rain_status" class="sensor-badge badge-aman" style="font-size:11px;">--</span></div>
+    </div>
+    <div class="monitor-card">
+      <div class="monitor-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <span>Light Sensor (LDR)</span>
+      </div>
+      <div class="data-row"><span class="data-label">Nilai saat ini</span><span id="mon_ldr">-- lux</span></div>
+      <div class="data-row"><span class="data-label">Threshold terang</span><span class="thr-cyan">&gt; 2500</span></div>
+      <div class="data-row"><span class="data-label">Threshold mendung</span><span class="thr-cyan">1000 – 2500</span></div>
+      <div class="data-row"><span class="data-label">Status</span><span id="mon_ldr_status" class="sensor-badge badge-gelap" style="font-size:11px;">--</span></div>
+    </div>
+    <div class="monitor-card">
+      <div class="monitor-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        <span>Sistem Jemuran</span>
+      </div>
+      <div class="data-row"><span class="data-label">Posisi jemuran</span><span id="mon_posisi">--</span></div>
+      <div class="data-row"><span class="data-label">Exhaust fan</span><span id="mon_fan">--</span></div>
+      <div class="data-row"><span class="data-label">Fan PWM</span><span id="mon_pwm">--</span></div>
+      <div class="data-row"><span class="data-label">Mode operasi</span><span style="color:#a855f7;font-weight:600;">AUTO (Fuzzy)</span></div>
+      <div class="data-row"><span class="data-label">MQTT Status</span><span id="mon_mqtt" style="color:#4ade80;font-size:12px;">Connecting...</span></div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <h2>📊 Grafik Sensor</h2>
+    <canvas id="chartMonitoring" height="90"></canvas>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div id="page-history" class="page">
+  <div class="page-header"><h1>HISTORY</h1><p>Riwayat data sensor & aksi sistem</p></div>
+  <div class="log-card" style="margin-bottom:18px;">
+    <h2 style="margin-bottom:16px;">📋 Riwayat Data Sensor</h2>
+    <div class="history-wrap">
+      <table class="history-table">
+        <thead><tr><th>Waktu</th><th>Suhu</th><th>Rain Avg</th><th>LDR</th><th>Kondisi</th><th>Jemuran</th><th>Fan</th></tr></thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="log-card">
+    <h2 style="margin-bottom:16px;">🔔 Log Notifikasi</h2>
+    <div id="historyLogList"></div>
+  </div>
+</div>
+
+</div></div><!-- end main & container -->
+
+<script>
+// ============================================================
+// KONFIGURASI MQTT
+// ============================================================
+const MQTT_BROKER_WS  = 'wss://broker.hivemq.com:8884/mqtt'; // WebSocket Secure
+const MQTT_CLIENT_ID  = 'SmartDrying_Web_' + Math.random().toString(36).substr(2,6);
+
+const TOPIC_SENSOR    = 'smartdrying/sensor';   // subscribe — terima data ESP32
+const TOPIC_STATUS    = 'smartdrying/status';   // subscribe — terima status
+const TOPIC_COMMAND   = 'smartdrying/command';  // publish   — kirim perintah
+const TOPIC_ONLINE    = 'smartdrying/online';   // subscribe — cek ESP32 online
+
+const POLL_INTERVAL   = 3000; // ms
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  temp:0, rain1:0, rain2:0, rainAvg:0, ldr:0,
+  kondisi:'--', fanPwm:0,
+  modeJemuran:'AUTO', targetJemuran:'keluar',
+  modeFan:'AUTO', targetFan:'OFF',
+  esp32Online: false, mqttConnected: false
+};
+let tempMin = 999, tempMax = -999;
+let jemuranIsManual = false;
+let fanIsManual = false;
+let manualJemuranTarget = 'keluar';
+let manualFanTarget = 'OFF';
+let mqttClient = null;
+
+// ============================================================
+// MQTT CONNECT
+// ============================================================
+function connectMQTT() {
+  setConnStatus('connecting');
+  addLog('🔌 Menghubungkan ke MQTT broker...');
+
+  mqttClient = mqtt.connect(MQTT_BROKER_WS, {
+    clientId: MQTT_CLIENT_ID,
+    clean: true,
+    reconnectPeriod: 5000,
+    connectTimeout: 10000
+  });
+
+  mqttClient.on('connect', () => {
+    state.mqttConnected = true;
+    setConnStatus('connected');
+    addLog('✅ MQTT terhubung ke broker.hivemq.com');
+
+    // Subscribe ke topic sensor & status dari ESP32
+    mqttClient.subscribe(TOPIC_SENSOR,  { qos: 0 });
+    mqttClient.subscribe(TOPIC_STATUS,  { qos: 0 });
+    mqttClient.subscribe(TOPIC_ONLINE,  { qos: 1 });
+  });
+
+  mqttClient.on('message', (topic, payload) => {
+    const msg = payload.toString();
+    handleMessage(topic, msg);
+  });
+
+  mqttClient.on('disconnect', () => {
+    state.mqttConnected = false;
+    state.esp32Online   = false;
+    setConnStatus('disconnected');
+    addLog('⚠️ MQTT terputus, mencoba reconnect...');
+    updateSidebarStatus();
+  });
+
+  mqttClient.on('error', (err) => {
+    setConnStatus('disconnected');
+    addLog('❌ MQTT error: ' + err.message);
+  });
+
+  mqttClient.on('reconnect', () => {
+    setConnStatus('connecting');
+    addLog('🔄 Reconnecting MQTT...');
+  });
+}
+
+// ============================================================
+// HANDLE INCOMING MESSAGE
+// ============================================================
+function handleMessage(topic, msg) {
+  if(topic === TOPIC_ONLINE) {
+    state.esp32Online = (msg === '1');
+    updateSidebarStatus();
+    if(state.esp32Online) addLog('📡 ESP32 online terdeteksi');
+    return;
+  }
+
+  if(topic === TOPIC_SENSOR) {
+    try {
+      const d = JSON.parse(msg);
+      state.temp      = parseFloat(d.temp)     || 0;
+      state.rain1     = parseInt(d.rain1)       || 0;
+      state.rain2     = parseInt(d.rain2)       || 0;
+      state.rainAvg   = parseInt(d.rainAvg)     || 0;
+      state.ldr       = parseInt(d.ldr)         || 0;
+      state.kondisi   = d.kondisi               || '--';
+      state.fanPwm    = parseInt(d.fanPwm)      || 0;
+
+      // Hanya update mode jika AUTO (jangan overwrite mode manual dari web)
+      if(!jemuranIsManual && d.modeJemuran) state.modeJemuran   = d.modeJemuran;
+      if(!jemuranIsManual && d.targetJemuran) state.targetJemuran = d.targetJemuran;
+      if(!fanIsManual     && d.modeFan)    state.modeFan       = d.modeFan;
+      if(!fanIsManual     && d.targetFan)  state.targetFan     = d.targetFan;
+
+      state.esp32Online = true;
+
+      // Update min/max suhu
+      if(state.temp > 0) {
+        if(state.temp < tempMin) tempMin = state.temp;
+        if(state.temp > tempMax) tempMax = state.temp;
+      }
+
+      updateUI();
+      pushChartData(state.temp, state.rainAvg, state.ldr);
+
+      const now = new Date();
+      const waktu = now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+      addHistoryRow({ waktu, suhu:state.temp.toFixed(1)+'°C', rain:state.rainAvg, ldr:state.ldr, kondisi:state.kondisi, jemuran:state.targetJemuran.toUpperCase(), fan:state.targetFan });
+
+      // Log perubahan kondisi
+      if(state.kondisi !== window._lastKondisi) {
+        addLog('🌤️ Kondisi: ' + state.kondisi + ' (rain avg: ' + state.rainAvg + ')');
+        window._lastKondisi = state.kondisi;
+      }
+      if(state.targetJemuran !== window._lastJemuran) {
+        addLog('🧺 Jemuran → ' + state.targetJemuran.toUpperCase() + ' (' + state.modeJemuran + ')');
+        window._lastJemuran = state.targetJemuran;
+      }
+
+      document.getElementById('sidebarLastMsg').textContent = 'Last data: ' + new Date().toLocaleTimeString('id-ID');
+      updateSidebarStatus();
+
+    } catch(e) { console.error('JSON parse error:', e); }
+    return;
+  }
+}
+
+// ============================================================
+// PUBLISH COMMAND KE ESP32
+// Format: modeJemuran,targetJemuran,modeFan,targetFan
+// Contoh: "MANUAL,masuk,AUTO,OFF"
+// ============================================================
+function publishCommand() {
+  if(!mqttClient || !state.mqttConnected) return;
+  const modeJ = jemuranIsManual ? 'MANUAL' : 'AUTO';
+  const modeF = fanIsManual     ? 'MANUAL' : 'AUTO';
+  const tgtJ  = jemuranIsManual ? manualJemuranTarget : state.targetJemuran;
+  const tgtF  = fanIsManual     ? manualFanTarget     : state.targetFan;
+  const msg   = modeJ + ',' + tgtJ + ',' + modeF + ',' + tgtF;
+  mqttClient.publish(TOPIC_COMMAND, msg, { qos: 1 });
+  console.log('[MQTT PUB]', TOPIC_COMMAND, msg);
+}
+
+// ============================================================
+// UI FUNCTIONS
+// ============================================================
+function setConnStatus(s) {
+  const dot  = document.getElementById('connDot');
+  const text = document.getElementById('connText');
+  const monMqtt = document.getElementById('mon_mqtt');
+  if(s === 'connected') {
+    dot.className  = 'conn-dot connected';
+    text.textContent = '✅ MQTT Connected — broker.hivemq.com (WebSocket)';
+    if(monMqtt) { monMqtt.textContent='Connected'; monMqtt.style.color='#4ade80'; }
+  } else if(s === 'connecting') {
+    dot.className  = 'conn-dot connecting';
+    text.textContent = '🔄 Menghubungkan ke broker.hivemq.com...';
+    if(monMqtt) { monMqtt.textContent='Connecting...'; monMqtt.style.color='#facc15'; }
+  } else {
+    dot.className  = 'conn-dot disconnected';
+    text.textContent = '❌ MQTT Disconnected — mencoba reconnect...';
+    if(monMqtt) { monMqtt.textContent='Disconnected'; monMqtt.style.color='#f87171'; }
+  }
+}
+
+function updateSidebarStatus() {
+  const dot    = document.getElementById('sidebarDot');
+  const status = document.getElementById('sidebarStatus');
+  if(state.mqttConnected && state.esp32Online) {
+    dot.className = 'status-dot green'; status.textContent = 'ESP32 Online';
+  } else if(state.mqttConnected) {
+    dot.className = 'status-dot yellow'; status.textContent = 'MQTT OK — ESP32 Offline';
+  } else {
+    dot.className = 'status-dot red'; status.textContent = 'Disconnected';
+  }
+}
+
+function updateUI() {
+  const { temp, rainAvg, ldr, kondisi, modeJemuran, targetJemuran, modeFan, targetFan, fanPwm } = state;
+
+  document.getElementById('weatherVal').textContent  = kondisi;
+  document.getElementById('weatherTemp').textContent = temp.toFixed(1) + '°C';
+
+  // Suhu
+  document.getElementById('tempValue').innerHTML = temp.toFixed(1) + '<span style="font-size:22px;font-weight:400;">°C</span>';
+  const tb = document.getElementById('tempBadge');
+  if(temp < 20)      { tb.className='sensor-badge badge-dingin'; tb.textContent='DINGIN'; }
+  else if(temp <= 30){ tb.className='sensor-badge badge-normal'; tb.textContent='NORMAL'; }
+  else               { tb.className='sensor-badge badge-panas';  tb.textContent='PANAS';  }
+
+  // Rain
+  document.getElementById('rainValue').innerHTML = rainAvg + ' <span style="font-size:16px;color:#9ca3af;">avg</span>';
+  const rb = document.getElementById('rainBadge');
+  if(kondisi==='HUJAN')  { rb.className='sensor-badge badge-hujan';   rb.textContent='HUJAN';   }
+  else if(kondisi==='GERIMIS'){ rb.className='sensor-badge badge-gerimis'; rb.textContent='GERIMIS'; }
+  else                   { rb.className='sensor-badge badge-aman';    rb.textContent='AMAN';    }
+
+  // LDR
+  document.getElementById('ldrValue').textContent = ldr;
+  const lb = document.getElementById('ldrBadge');
+  if(ldr < 800)      { lb.className='sensor-badge badge-gelap';   lb.textContent='GELAP';   }
+  else if(ldr < 2500){ lb.className='sensor-badge badge-mendung'; lb.textContent='MENDUNG'; }
+  else               { lb.className='sensor-badge badge-terang';  lb.textContent='TERANG';  }
+
+  // Toggle jemuran
+  const isAutoJ = !jemuranIsManual;
+  document.getElementById('jemuranModeToggle').checked = isAutoJ;
+  document.getElementById('jemuranAutoLabel').className   = isAutoJ ? 'active-mode' : '';
+  document.getElementById('jemuranManualLabel').className = isAutoJ ? '' : 'active-mode';
+  document.getElementById('btnMasuk').disabled  = isAutoJ;
+  document.getElementById('btnKeluar').disabled = isAutoJ;
+  document.getElementById('jemuranModeInfo').textContent  = isAutoJ ? 'Mode AUTO — dikontrol fuzzy ESP32' : 'Mode MANUAL — kontrol dari web';
+
+  // Toggle fan
+  const isAutoF = !fanIsManual;
+  document.getElementById('fanModeToggle').checked = isAutoF;
+  document.getElementById('fanAutoLabel').className   = isAutoF ? 'active-mode' : '';
+  document.getElementById('fanManualLabel').className = isAutoF ? '' : 'active-mode';
+  document.getElementById('btnFan').disabled = isAutoF;
+  document.getElementById('fanSubText').textContent = isAutoF ? 'Mode AUTO — dikontrol fuzzy ESP32' : 'Mode MANUAL — kontrol dari web';
+
+  const effJ = isAutoJ ? targetJemuran : manualJemuranTarget;
+  const effF = isAutoF ? targetFan     : manualFanTarget;
+
+  updateJemuranVisual(effJ);
+  updateFanVisual(effF, fanPwm);
+
+  // Monitoring
+  document.getElementById('mon_temp').textContent = temp.toFixed(1) + ' °C';
+  document.getElementById('mon_temp_min').textContent = tempMin === 999 ? '-- °C' : tempMin.toFixed(1) + ' °C';
+  document.getElementById('mon_temp_max').textContent = tempMax === -999 ? '-- °C' : tempMax.toFixed(1) + ' °C';
+  document.getElementById('mon_rain').textContent = rainAvg;
+  document.getElementById('mon_ldr').textContent  = ldr + ' lux';
+  document.getElementById('mon_posisi').textContent = effJ.toUpperCase();
+  document.getElementById('mon_fan').textContent  = effF;
+  document.getElementById('mon_pwm').textContent  = fanPwm;
+
+  const mts = document.getElementById('mon_temp_status');
+  if(temp<20){mts.className='sensor-badge badge-dingin';mts.textContent='DINGIN';}
+  else if(temp<=30){mts.className='sensor-badge badge-normal';mts.textContent='NORMAL';}
+  else{mts.className='sensor-badge badge-panas';mts.textContent='PANAS';}
+
+  const mrs = document.getElementById('mon_rain_status');
+  if(kondisi==='HUJAN'){mrs.className='sensor-badge badge-hujan';mrs.textContent='HUJAN';}
+  else if(kondisi==='GERIMIS'){mrs.className='sensor-badge badge-gerimis';mrs.textContent='GERIMIS';}
+  else{mrs.className='sensor-badge badge-aman';mrs.textContent='AMAN';}
+
+  const mls = document.getElementById('mon_ldr_status');
+  if(ldr<800){mls.className='sensor-badge badge-gelap';mls.textContent='GELAP';}
+  else if(ldr<2500){mls.className='sensor-badge badge-mendung';mls.textContent='MENDUNG';}
+  else{mls.className='sensor-badge badge-terang';mls.textContent='TERANG';}
+}
+
+function updateJemuranVisual(pos) {
+  const clothes = ['baju1','baju2','baju3','baju4','baju5'];
+  const label = document.getElementById('jemuranSVGLabel');
+  const badge = document.getElementById('positionBadge');
+  const tgt   = document.getElementById('jemuranTarget');
+  const esp   = document.getElementById('jemuranEsp32Pos');
+  if(pos === 'masuk') {
+    clothes.forEach(id => { const el = document.getElementById(id); if(el){el.style.transform='translateY(-60px) scaleY(0.15)';el.style.opacity='0.1';} });
+    label.textContent='MASUK'; label.setAttribute('fill','#f87171');
+    badge.textContent='POSITION: MASUK'; badge.style.color='#f87171'; badge.style.background='rgba(239,68,68,0.1)'; badge.style.borderColor='rgba(239,68,68,0.3)';
+    tgt.textContent='MASUK'; esp.textContent=state.esp32Online?'MASUK':'--';
+  } else {
+    clothes.forEach(id => { const el = document.getElementById(id); if(el){el.style.transform='translateY(0) scaleY(1)';el.style.opacity='1';} });
+    label.textContent='KELUAR'; label.setAttribute('fill','#4ade80');
+    badge.textContent='POSITION: KELUAR'; badge.style.color='#facc15'; badge.style.background='rgba(234,179,8,0.1)'; badge.style.borderColor='rgba(234,179,8,0.3)';
+    tgt.textContent='KELUAR'; esp.textContent=state.esp32Online?'KELUAR':'--';
+  }
+}
+
+function updateFanVisual(fanState, pwm) {
+  const cont = document.getElementById('fanContainer');
+  const stxt = document.getElementById('fanStatusText');
+  const ptxt = document.getElementById('fanPwmText');
+  if(fanState === 'ON') {
+    cont.className='fan-container fan-spinning';
+    stxt.textContent='EXHAUST ON'; stxt.style.color='#4ade80';
+    ptxt.textContent='PWM: ' + (pwm||'--');
+  } else {
+    cont.className='fan-container';
+    stxt.textContent='EXHAUST OFF'; stxt.style.color='#f87171';
+    ptxt.textContent='PWM: 0';
+  }
+}
+
+// ============================================================
+// TOGGLE MODE
+// ============================================================
+function toggleJemuranMode() {
+  jemuranIsManual = !document.getElementById('jemuranModeToggle').checked;
+  addLog(jemuranIsManual ? '🔧 Jemuran → Mode MANUAL' : '🤖 Jemuran → Mode AUTO');
+  updateUI();
+  publishCommand();
+}
+function toggleFanMode() {
+  fanIsManual = !document.getElementById('fanModeToggle').checked;
+  addLog(fanIsManual ? '🔧 Fan → Mode MANUAL' : '🤖 Fan → Mode AUTO');
+  updateUI();
+  publishCommand();
+}
+function cmdJemuran(target) {
+  if(!jemuranIsManual) return;
+  manualJemuranTarget = target;
+  addLog('🧺 Perintah MANUAL: Jemuran → ' + target.toUpperCase());
+  updateUI();
+  publishCommand();
+}
+function cmdFan() {
+  if(!fanIsManual) return;
+  manualFanTarget = (manualFanTarget==='ON') ? 'OFF' : 'ON';
+  addLog('💨 Perintah MANUAL: Fan → ' + manualFanTarget);
+  updateUI();
+  publishCommand();
+}
+
+// ============================================================
+// LOG & HISTORY
+// ============================================================
+const historyLog  = [];
+const historyRows = [];
+
+function addLog(msg) {
+  const el = document.getElementById('logList');
+  const now = new Date();
+  const t = now.getHours()+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
+  const item = document.createElement('div');
+  item.className = 'log-item';
+  item.innerHTML = '<div>'+msg+'</div><div class="log-time">'+t+'</div>';
+  el.insertBefore(item, el.firstChild);
+  while(el.children.length > 15) el.removeChild(el.lastChild);
+  historyLog.unshift({msg,t});
+  if(historyLog.length > 40) historyLog.pop();
+  refreshHistoryLog();
+}
+
+function refreshHistoryLog() {
+  const el = document.getElementById('historyLogList');
+  if(!el) return;
+  el.innerHTML = historyLog.map(l=>`<div class="log-item"><div>${l.msg}</div><div class="log-time">${l.t}</div></div>`).join('');
+}
+
+function addHistoryRow(d) {
+  historyRows.unshift(d);
+  if(historyRows.length > 30) historyRows.pop();
+  const tbody = document.getElementById('historyBody');
+  if(!tbody) return;
+  tbody.innerHTML = historyRows.map(r => {
+    const jC = r.jemuran==='MASUK'?'badge-masuk':'badge-keluar';
+    const fC = r.fan==='ON'?'badge-on':'badge-off';
+    return `<tr><td>${r.waktu}</td><td>${r.suhu}</td><td>${r.rain}</td><td>${r.ldr}</td><td>${r.kondisi}</td><td><span class="badge ${jC}">${r.jemuran}</span></td><td><span class="badge ${fC}">${r.fan}</span></td></tr>`;
+  }).join('');
+}
+
+// ============================================================
+// CHARTS
+// ============================================================
+let dashChart, monChart;
+const chartLabels=[], chartTemp=[], chartRain=[], chartLdr=[];
+
+function initCharts() {
+  const opt = {
+    responsive:true, animation:{duration:300},
+    plugins:{legend:{labels:{color:'#9ca3af',font:{size:12}}}},
+    scales:{
+      x:{ticks:{color:'#6b7280',font:{size:10},maxTicksLimit:8},grid:{color:'rgba(255,255,255,0.04)'}},
+      y:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}
+    }
+  };
+  dashChart = new Chart(document.getElementById('chartDashboard'), {
+    type:'line',
+    data:{labels:chartLabels,datasets:[
+      {label:'Suhu (°C)',  data:chartTemp, borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,0.07)',tension:0.4,fill:true,pointRadius:2},
+      {label:'Rain Avg',  data:chartRain, borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,0.07)', tension:0.4,fill:true,pointRadius:2},
+      {label:'LDR',       data:chartLdr,  borderColor:'#facc15',backgroundColor:'rgba(250,204,21,0.07)',tension:0.4,fill:true,pointRadius:2}
+    ]},
+    options:opt
+  });
+  monChart = new Chart(document.getElementById('chartMonitoring'), {
+    type:'bar',
+    data:{labels:[],datasets:[
+      {label:'Suhu (°C)', data:[], backgroundColor:'rgba(168,85,247,0.6)',borderColor:'#a855f7',borderWidth:1},
+      {label:'Rain',      data:[], backgroundColor:'rgba(6,182,212,0.6)', borderColor:'#06b6d4',borderWidth:1},
+      {label:'LDR',       data:[], backgroundColor:'rgba(250,204,21,0.5)',borderColor:'#facc15',borderWidth:1}
+    ]},
+    options:opt
+  });
+}
+
+function pushChartData(temp, rain, ldr) {
+  const now = new Date();
+  const l = now.getHours()+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
+  chartLabels.push(l); chartTemp.push(temp); chartRain.push(rain); chartLdr.push(ldr);
+  if(chartLabels.length > 30){ chartLabels.shift(); chartTemp.shift(); chartRain.shift(); chartLdr.shift(); }
+  dashChart.data.labels=[...chartLabels];
+  dashChart.data.datasets[0].data=[...chartTemp];
+  dashChart.data.datasets[1].data=[...chartRain];
+  dashChart.data.datasets[2].data=[...chartLdr];
+  dashChart.update('none');
+  const last = Math.min(chartLabels.length, 12);
+  monChart.data.labels=chartLabels.slice(-last);
+  monChart.data.datasets[0].data=chartTemp.slice(-last);
+  monChart.data.datasets[1].data=chartRain.slice(-last);
+  monChart.data.datasets[2].data=chartLdr.slice(-last);
+  monChart.update('none');
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  closeSidebar();
+}
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('show'); }
+function closeSidebar()  { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+
+// ============================================================
+// INIT
+// ============================================================
+document.getElementById('logInitTime').textContent = new Date().toLocaleTimeString('id-ID');
+initCharts();
+connectMQTT();
+</script>
+</body>
+</html>
