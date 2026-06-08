@@ -2,18 +2,24 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=1280">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Smart Drying System</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- MQTT.js via WebSocket (untuk browser) -->
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
 body{background:#0a0a0a;color:white;overflow-x:hidden;min-height:100vh;}
 .container{display:flex;min-height:100vh;}
 
+/* OVERLAY */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99;}
+.overlay.show{display:block;}
+
 /* SIDEBAR */
-.sidebar{width:240px;background:#111111;border-right:1px solid rgba(255,255,255,0.06);padding:24px 16px;display:flex;flex-direction:column;justify-content:space-between;flex-shrink:0;z-index:100;}
+.sidebar{width:240px;background:#111111;border-right:1px solid rgba(255,255,255,0.06);padding:24px 16px;display:flex;flex-direction:column;justify-content:space-between;flex-shrink:0;transition:transform 0.35s cubic-bezier(.4,0,.2,1);z-index:100;}
 .logo h1{font-size:26px;font-weight:700;line-height:1.2;color:#a855f7;margin-bottom:4px;}
 .logo p{color:#6b7280;font-size:12px;}
 .menu{margin-top:32px;display:flex;flex-direction:column;gap:6px;}
@@ -29,6 +35,11 @@ body{background:#0a0a0a;color:white;overflow-x:hidden;min-height:100vh;}
 .status-dot.red{background:#f87171;}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
 .status-box p{font-size:12px;color:#6b7280;margin-top:6px;padding-left:14px;}
+
+/* TOPBAR */
+.topbar{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:#111111;border-bottom:1px solid rgba(255,255,255,0.06);align-items:center;justify-content:space-between;padding:0 16px;z-index:98;}
+.topbar-title{font-size:15px;font-weight:700;color:#a855f7;}
+.hamburger{background:none;border:none;color:white;font-size:24px;cursor:pointer;}
 
 /* MAIN */
 .main{flex:1;padding:28px;overflow-y:auto;background:#0d0d0d;}
@@ -61,8 +72,6 @@ body{background:#0a0a0a;color:white;overflow-x:hidden;min-height:100vh;}
 .sensor-card-header span{font-size:13px;font-weight:600;color:#a855f7;letter-spacing:0.5px;text-transform:uppercase;}
 .sensor-value-big{font-size:44px;font-weight:700;margin-bottom:12px;line-height:1;}
 .sensor-badge{display:inline-block;padding:5px 14px;border-radius:8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
-
-/* BADGES */
 .badge-dingin{background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);}
 .badge-normal{background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);}
 .badge-panas{background:rgba(249,115,22,0.15);color:#fb923c;border:1px solid rgba(249,115,22,0.3);}
@@ -72,14 +81,6 @@ body{background:#0a0a0a;color:white;overflow-x:hidden;min-height:100vh;}
 .badge-gelap{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);}
 .badge-mendung{background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.3);}
 .badge-terang{background:rgba(250,204,21,0.15);color:#fde047;border:1px solid rgba(250,204,21,0.3);}
-
-/* CHART & LOG */
-.chart-card{background:#161616;border-radius:16px;padding:22px;border:1px solid rgba(255,255,255,0.07);margin-bottom:24px;}
-.chart-card h2{font-size:15px;font-weight:700;margin-bottom:18px;}
-.log-card{background:#161616;border-radius:16px;padding:22px;border:1px solid rgba(255,255,255,0.07); margin-bottom:24px;}
-.log-card h2{font-size:15px;font-weight:700;margin-bottom:16px;}
-.log-item{background:#0d0d0d;border-left:3px solid #7c3aed;padding:10px 14px;border-radius:8px;margin-bottom:10px;font-size:13px;}
-.log-time{color:#6b7280;font-size:11px;margin-top:4px;}
 
 /* SYSTEM GRID */
 .system-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
@@ -120,6 +121,14 @@ body{background:#0a0a0a;color:white;overflow-x:hidden;min-height:100vh;}
 .btn-fan:hover{transform:scale(1.02);}
 .btn-fan:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
 
+/* CHART & LOG */
+.chart-card{background:#161616;border-radius:16px;padding:22px;border:1px solid rgba(255,255,255,0.07);margin-bottom:24px;}
+.chart-card h2{font-size:15px;font-weight:700;margin-bottom:18px;}
+.log-card{background:#161616;border-radius:16px;padding:22px;border:1px solid rgba(255,255,255,0.07);}
+.log-card h2{font-size:15px;font-weight:700;margin-bottom:16px;}
+.log-item{background:#0d0d0d;border-left:3px solid #7c3aed;padding:10px 14px;border-radius:8px;margin-bottom:10px;font-size:13px;}
+.log-time{color:#6b7280;font-size:11px;margin-top:4px;}
+
 /* MONITORING */
 .page-header{margin-bottom:28px;}
 .page-header h1{font-size:28px;font-weight:700;margin-bottom:4px;}
@@ -148,13 +157,33 @@ body{background:#0a0a0a;color:white;overflow-x:hidden;min-height:100vh;}
 .badge-on{background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.25);}
 .badge-off{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.25);}
 
-/* Media query dihapus agar laptop & HP sama persis posisinya */
+/* MOBILE */
+@media(max-width:768px){
+  .topbar{display:flex;}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .main{padding:16px;padding-top:72px;}
+  .sensor-grid{grid-template-columns:1fr;}
+  .system-grid{grid-template-columns:1fr;}
+  .monitor-grid{grid-template-columns:1fr;}
+  .dashboard-toprow{flex-direction:column;}
+  .top-cards{width:100%;}
+  .top-card{flex:1;}
+}
 </style>
 </head>
 <body>
 
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+<div class="topbar">
+  <button class="hamburger" onclick="toggleSidebar()">☰</button>
+  <span class="topbar-title">SMART DRYING SYSTEM</span>
+  <span style="width:40px;"></span>
+</div>
+
 <div class="container">
 
+<!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
   <div>
     <div class="logo">
@@ -186,8 +215,10 @@ body{background:#0a0a0a;color:white;overflow-x:hidden;min-height:100vh;}
   </div>
 </div>
 
+<!-- MAIN -->
 <div class="main">
 
+<!-- DASHBOARD -->
 <div id="page-dashboard" class="page active">
   <div class="dashboard-toprow">
     <div class="dashboard-toprow-title">
@@ -240,12 +271,8 @@ body{background:#0a0a0a;color:white;overflow-x:hidden;min-height:100vh;}
     </div>
   </div>
 
-  <div class="chart-card">
-    <h2>📈 REALTIME GRAPH MONITORING</h2>
-    <canvas id="chartDashboard" height="80"></canvas>
-  </div>
-
   <div class="system-grid">
+    <!-- JEMURAN -->
     <div class="system-card">
       <div class="system-card-title">
         STATUS JEMURAN
@@ -289,6 +316,7 @@ body{background:#0a0a0a;color:white;overflow-x:hidden;min-height:100vh;}
       </div>
     </div>
 
+    <!-- FAN -->
     <div class="system-card">
       <div class="system-card-title">
         EXHAUST FAN
@@ -315,6 +343,11 @@ body{background:#0a0a0a;color:white;overflow-x:hidden;min-height:100vh;}
     </div>
   </div>
 
+  <div class="chart-card">
+    <h2>📈 REALTIME MONITORING</h2>
+    <canvas id="chartDashboard" height="80"></canvas>
+  </div>
+
   <div class="log-card">
     <h2>🔔 NOTIFICATION LOG</h2>
     <div id="logList">
@@ -323,6 +356,7 @@ body{background:#0a0a0a;color:white;overflow-x:hidden;min-height:100vh;}
   </div>
 </div>
 
+<!-- MONITORING -->
 <div id="page-monitoring" class="page">
   <div class="page-header"><h1>MONITORING</h1><p>Detail sensor & status realtime via MQTT</p></div>
   <div class="monitor-grid">
@@ -369,11 +403,12 @@ body{background:#0a0a0a;color:white;overflow-x:hidden;min-height:100vh;}
     </div>
   </div>
   <div class="chart-card">
-    <h2>📊 Grafik Bar Sensor</h2>
+    <h2>📊 Grafik Sensor</h2>
     <canvas id="chartMonitoring" height="90"></canvas>
   </div>
 </div>
 
+<!-- HISTORY -->
 <div id="page-history" class="page">
   <div class="page-header"><h1>HISTORY</h1><p>Riwayat data sensor & aksi sistem</p></div>
   <div class="log-card" style="margin-bottom:18px;">
@@ -391,17 +426,21 @@ body{background:#0a0a0a;color:white;overflow-x:hidden;min-height:100vh;}
   </div>
 </div>
 
-</div></div><script>
+</div></div><!-- end main & container -->
+
+<script>
 // ============================================================
 // KONFIGURASI MQTT
 // ============================================================
 const MQTT_BROKER_WS  = 'wss://broker.hivemq.com:8884/mqtt'; // WebSocket Secure
 const MQTT_CLIENT_ID  = 'SmartDrying_Web_' + Math.random().toString(36).substr(2,6);
 
-const TOPIC_SENSOR    = 'smartdrying/sensor';   
-const TOPIC_STATUS    = 'smartdrying/status';   
-const TOPIC_COMMAND   = 'smartdrying/command';  
-const TOPIC_ONLINE    = 'smartdrying/online';   
+const TOPIC_SENSOR    = 'smartdrying/sensor';   // subscribe — terima data ESP32
+const TOPIC_STATUS    = 'smartdrying/status';   // subscribe — terima status
+const TOPIC_COMMAND   = 'smartdrying/command';  // publish   — kirim perintah
+const TOPIC_ONLINE    = 'smartdrying/online';   // subscribe — cek ESP32 online
+
+const POLL_INTERVAL   = 3000; // ms
 
 // ============================================================
 // STATE
@@ -439,6 +478,7 @@ function connectMQTT() {
     setConnStatus('connected');
     addLog('✅ MQTT terhubung ke broker.hivemq.com');
 
+    // Subscribe ke topic sensor & status dari ESP32
     mqttClient.subscribe(TOPIC_SENSOR,  { qos: 0 });
     mqttClient.subscribe(TOPIC_STATUS,  { qos: 0 });
     mqttClient.subscribe(TOPIC_ONLINE,  { qos: 1 });
@@ -461,6 +501,11 @@ function connectMQTT() {
     setConnStatus('disconnected');
     addLog('❌ MQTT error: ' + err.message);
   });
+
+  mqttClient.on('reconnect', () => {
+    setConnStatus('connecting');
+    addLog('🔄 Reconnecting MQTT...');
+  });
 }
 
 // ============================================================
@@ -477,7 +522,7 @@ function handleMessage(topic, msg) {
   if(topic === TOPIC_SENSOR) {
     try {
       const d = JSON.parse(msg);
-      state.temp      = parseFloat(d.temp)      || 0;
+      state.temp      = parseFloat(d.temp)     || 0;
       state.rain1     = parseInt(d.rain1)       || 0;
       state.rain2     = parseInt(d.rain2)       || 0;
       state.rainAvg   = parseInt(d.rainAvg)     || 0;
@@ -485,13 +530,15 @@ function handleMessage(topic, msg) {
       state.kondisi   = d.kondisi               || '--';
       state.fanPwm    = parseInt(d.fanPwm)      || 0;
 
+      // Hanya update mode jika AUTO (jangan overwrite mode manual dari web)
       if(!jemuranIsManual && d.modeJemuran) state.modeJemuran   = d.modeJemuran;
       if(!jemuranIsManual && d.targetJemuran) state.targetJemuran = d.targetJemuran;
-      if(!fanIsManual     && d.modeFan)     state.modeFan       = d.modeFan;
-      if(!fanIsManual     && d.targetFan)   state.targetFan     = d.targetFan;
+      if(!fanIsManual     && d.modeFan)    state.modeFan       = d.modeFan;
+      if(!fanIsManual     && d.targetFan)  state.targetFan     = d.targetFan;
 
       state.esp32Online = true;
 
+      // Update min/max suhu
       if(state.temp > 0) {
         if(state.temp < tempMin) tempMin = state.temp;
         if(state.temp > tempMax) tempMax = state.temp;
@@ -504,6 +551,7 @@ function handleMessage(topic, msg) {
       const waktu = now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
       addHistoryRow({ waktu, suhu:state.temp.toFixed(1)+'°C', rain:state.rainAvg, ldr:state.ldr, kondisi:state.kondisi, jemuran:state.targetJemuran.toUpperCase(), fan:state.targetFan });
 
+      // Log perubahan kondisi
       if(state.kondisi !== window._lastKondisi) {
         addLog('🌤️ Kondisi: ' + state.kondisi + ' (rain avg: ' + state.rainAvg + ')');
         window._lastKondisi = state.kondisi;
@@ -522,7 +570,9 @@ function handleMessage(topic, msg) {
 }
 
 // ============================================================
-// PUBLISH COMMAND
+// PUBLISH COMMAND KE ESP32
+// Format: modeJemuran,targetJemuran,modeFan,targetFan
+// Contoh: "MANUAL,masuk,AUTO,OFF"
 // ============================================================
 function publishCommand() {
   if(!mqttClient || !state.mqttConnected) return;
@@ -532,6 +582,7 @@ function publishCommand() {
   const tgtF  = fanIsManual     ? manualFanTarget     : state.targetFan;
   const msg   = modeJ + ',' + tgtJ + ',' + modeF + ',' + tgtF;
   mqttClient.publish(TOPIC_COMMAND, msg, { qos: 1 });
+  console.log('[MQTT PUB]', TOPIC_COMMAND, msg);
 }
 
 // ============================================================
@@ -542,13 +593,16 @@ function setConnStatus(s) {
   const text = document.getElementById('connText');
   const monMqtt = document.getElementById('mon_mqtt');
   if(s === 'connected') {
-    dot.className  = 'conn-dot connected'; text.textContent = '✅ MQTT Connected — broker.hivemq.com (WebSocket)';
+    dot.className  = 'conn-dot connected';
+    text.textContent = '✅ MQTT Connected — broker.hivemq.com (WebSocket)';
     if(monMqtt) { monMqtt.textContent='Connected'; monMqtt.style.color='#4ade80'; }
   } else if(s === 'connecting') {
-    dot.className  = 'conn-dot connecting'; text.textContent = '🔄 Menghubungkan ke broker.hivemq.com...';
+    dot.className  = 'conn-dot connecting';
+    text.textContent = '🔄 Menghubungkan ke broker.hivemq.com...';
     if(monMqtt) { monMqtt.textContent='Connecting...'; monMqtt.style.color='#facc15'; }
   } else {
-    dot.className  = 'conn-dot disconnected'; text.textContent = '❌ MQTT Disconnected — mencoba reconnect...';
+    dot.className  = 'conn-dot disconnected';
+    text.textContent = '❌ MQTT Disconnected — mencoba reconnect...';
     if(monMqtt) { monMqtt.textContent='Disconnected'; monMqtt.style.color='#f87171'; }
   }
 }
@@ -571,24 +625,28 @@ function updateUI() {
   document.getElementById('weatherVal').textContent  = kondisi;
   document.getElementById('weatherTemp').textContent = temp.toFixed(1) + '°C';
 
+  // Suhu
   document.getElementById('tempValue').innerHTML = temp.toFixed(1) + '<span style="font-size:22px;font-weight:400;">°C</span>';
   const tb = document.getElementById('tempBadge');
   if(temp < 20)      { tb.className='sensor-badge badge-dingin'; tb.textContent='DINGIN'; }
   else if(temp <= 30){ tb.className='sensor-badge badge-normal'; tb.textContent='NORMAL'; }
   else               { tb.className='sensor-badge badge-panas';  tb.textContent='PANAS';  }
 
+  // Rain
   document.getElementById('rainValue').innerHTML = rainAvg + ' <span style="font-size:16px;color:#9ca3af;">avg</span>';
   const rb = document.getElementById('rainBadge');
   if(kondisi==='HUJAN')  { rb.className='sensor-badge badge-hujan';   rb.textContent='HUJAN';   }
   else if(kondisi==='GERIMIS'){ rb.className='sensor-badge badge-gerimis'; rb.textContent='GERIMIS'; }
   else                   { rb.className='sensor-badge badge-aman';    rb.textContent='AMAN';    }
 
+  // LDR
   document.getElementById('ldrValue').textContent = ldr;
   const lb = document.getElementById('ldrBadge');
   if(ldr < 800)      { lb.className='sensor-badge badge-gelap';   lb.textContent='GELAP';   }
   else if(ldr < 2500){ lb.className='sensor-badge badge-mendung'; lb.textContent='MENDUNG'; }
   else               { lb.className='sensor-badge badge-terang';  lb.textContent='TERANG';  }
 
+  // Toggle jemuran
   const isAutoJ = !jemuranIsManual;
   document.getElementById('jemuranModeToggle').checked = isAutoJ;
   document.getElementById('jemuranAutoLabel').className   = isAutoJ ? 'active-mode' : '';
@@ -597,6 +655,7 @@ function updateUI() {
   document.getElementById('btnKeluar').disabled = isAutoJ;
   document.getElementById('jemuranModeInfo').textContent  = isAutoJ ? 'Mode AUTO — dikontrol fuzzy ESP32' : 'Mode MANUAL — kontrol dari web';
 
+  // Toggle fan
   const isAutoF = !fanIsManual;
   document.getElementById('fanModeToggle').checked = isAutoF;
   document.getElementById('fanAutoLabel').className   = isAutoF ? 'active-mode' : '';
@@ -610,6 +669,7 @@ function updateUI() {
   updateJemuranVisual(effJ);
   updateFanVisual(effF, fanPwm);
 
+  // Monitoring
   document.getElementById('mon_temp').textContent = temp.toFixed(1) + ' °C';
   document.getElementById('mon_temp_min').textContent = tempMin === 999 ? '-- °C' : tempMin.toFixed(1) + ' °C';
   document.getElementById('mon_temp_max').textContent = tempMax === -999 ? '-- °C' : tempMax.toFixed(1) + ' °C';
@@ -618,6 +678,21 @@ function updateUI() {
   document.getElementById('mon_posisi').textContent = effJ.toUpperCase();
   document.getElementById('mon_fan').textContent  = effF;
   document.getElementById('mon_pwm').textContent  = fanPwm;
+
+  const mts = document.getElementById('mon_temp_status');
+  if(temp<20){mts.className='sensor-badge badge-dingin';mts.textContent='DINGIN';}
+  else if(temp<=30){mts.className='sensor-badge badge-normal';mts.textContent='NORMAL';}
+  else{mts.className='sensor-badge badge-panas';mts.textContent='PANAS';}
+
+  const mrs = document.getElementById('mon_rain_status');
+  if(kondisi==='HUJAN'){mrs.className='sensor-badge badge-hujan';mrs.textContent='HUJAN';}
+  else if(kondisi==='GERIMIS'){mrs.className='sensor-badge badge-gerimis';mrs.textContent='GERIMIS';}
+  else{mrs.className='sensor-badge badge-aman';mrs.textContent='AMAN';}
+
+  const mls = document.getElementById('mon_ldr_status');
+  if(ldr<800){mls.className='sensor-badge badge-gelap';mls.textContent='GELAP';}
+  else if(ldr<2500){mls.className='sensor-badge badge-mendung';mls.textContent='MENDUNG';}
+  else{mls.className='sensor-badge badge-terang';mls.textContent='TERANG';}
 }
 
 function updateJemuranVisual(pos) {
@@ -654,10 +729,35 @@ function updateFanVisual(fanState, pwm) {
   }
 }
 
-function toggleJemuranMode() { jemuranIsManual = !document.getElementById('jemuranModeToggle').checked; addLog(jemuranIsManual ? '🔧 Jemuran → Mode MANUAL' : '🤖 Jemuran → Mode AUTO'); updateUI(); publishCommand(); }
-function toggleFanMode() { fanIsManual = !document.getElementById('fanModeToggle').checked; addLog(fanIsManual ? '🔧 Fan → Mode MANUAL' : '🤖 Fan → Mode AUTO'); updateUI(); publishCommand(); }
-function cmdJemuran(target) { if(!jemuranIsManual) return; manualJemuranTarget = target; addLog('🧺 Perintah MANUAL: Jemuran → ' + target.toUpperCase()); updateUI(); publishCommand(); }
-function cmdFan() { if(!fanIsManual) return; manualFanTarget = (manualFanTarget==='ON') ? 'OFF' : 'ON'; addLog('💨 Perintah MANUAL: Fan → ' + manualFanTarget); updateUI(); publishCommand(); }
+// ============================================================
+// TOGGLE MODE
+// ============================================================
+function toggleJemuranMode() {
+  jemuranIsManual = !document.getElementById('jemuranModeToggle').checked;
+  addLog(jemuranIsManual ? '🔧 Jemuran → Mode MANUAL' : '🤖 Jemuran → Mode AUTO');
+  updateUI();
+  publishCommand();
+}
+function toggleFanMode() {
+  fanIsManual = !document.getElementById('fanModeToggle').checked;
+  addLog(fanIsManual ? '🔧 Fan → Mode MANUAL' : '🤖 Fan → Mode AUTO');
+  updateUI();
+  publishCommand();
+}
+function cmdJemuran(target) {
+  if(!jemuranIsManual) return;
+  manualJemuranTarget = target;
+  addLog('🧺 Perintah MANUAL: Jemuran → ' + target.toUpperCase());
+  updateUI();
+  publishCommand();
+}
+function cmdFan() {
+  if(!fanIsManual) return;
+  manualFanTarget = (manualFanTarget==='ON') ? 'OFF' : 'ON';
+  addLog('💨 Perintah MANUAL: Fan → ' + manualFanTarget);
+  updateUI();
+  publishCommand();
+}
 
 // ============================================================
 // LOG & HISTORY
@@ -670,7 +770,8 @@ function addLog(msg) {
   const now = new Date();
   const t = now.getHours()+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
   const item = document.createElement('div');
-  item.className = 'log-item'; item.innerHTML = '<div>'+msg+'</div><div class="log-time">'+t+'</div>';
+  item.className = 'log-item';
+  item.innerHTML = '<div>'+msg+'</div><div class="log-time">'+t+'</div>';
   el.insertBefore(item, el.firstChild);
   while(el.children.length > 15) el.removeChild(el.lastChild);
   historyLog.unshift({msg,t});
@@ -717,7 +818,8 @@ function initCharts() {
       {label:'Suhu (°C)',  data:chartTemp, borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,0.07)',tension:0.4,fill:true,pointRadius:2},
       {label:'Rain Avg',  data:chartRain, borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,0.07)', tension:0.4,fill:true,pointRadius:2},
       {label:'LDR',       data:chartLdr,  borderColor:'#facc15',backgroundColor:'rgba(250,204,21,0.07)',tension:0.4,fill:true,pointRadius:2}
-    ]}, options:opt
+    ]},
+    options:opt
   });
   monChart = new Chart(document.getElementById('chartMonitoring'), {
     type:'bar',
@@ -725,7 +827,8 @@ function initCharts() {
       {label:'Suhu (°C)', data:[], backgroundColor:'rgba(168,85,247,0.6)',borderColor:'#a855f7',borderWidth:1},
       {label:'Rain',      data:[], backgroundColor:'rgba(6,182,212,0.6)', borderColor:'#06b6d4',borderWidth:1},
       {label:'LDR',       data:[], backgroundColor:'rgba(250,204,21,0.5)',borderColor:'#facc15',borderWidth:1}
-    ]}, options:opt
+    ]},
+    options:opt
   });
 }
 
@@ -755,7 +858,10 @@ function showPage(name, btn) {
   document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   btn.classList.add('active');
+  closeSidebar();
 }
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('show'); }
+function closeSidebar()  { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
 
 // ============================================================
 // INIT
