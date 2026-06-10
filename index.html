@@ -1,3 +1,4 @@
+cat > /home/claude/smart_drying_v2.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -6,6 +7,7 @@
 <title>Smart Drying System</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
 <style>
 :root{
   --bg:#0a0a0f;
@@ -37,7 +39,35 @@ body{
 }
 @keyframes bg-shift{0%{transform:scale(1);}100%{transform:scale(1.05);}}
 
-/* MAIN CONTAINER - full width */
+/* ===== LOGIN SCREEN ===== */
+.login-overlay{
+  position:fixed; inset:0; z-index:500;
+  background:rgba(10,10,15,0.95); backdrop-filter:blur(12px);
+  display:flex; align-items:center; justify-content:center;
+}
+.login-box{
+  background:rgba(255,255,255,0.04); border:1px solid var(--border);
+  border-radius:24px; padding:40px 32px; width:360px; max-width:90vw;
+  text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.6);
+}
+.login-box h2{font-size:20px; font-weight:700; margin-bottom:6px; color:var(--text);}
+.login-box p{font-size:12px; color:var(--muted); margin-bottom:24px;}
+.login-box input{
+  width:100%; padding:12px 16px; border-radius:10px;
+  background:rgba(255,255,255,0.05); border:1px solid var(--border);
+  color:var(--text); font-size:14px; outline:none; transition:.2s;
+}
+.login-box input:focus{border-color:var(--purple);}
+.login-box button{
+  width:100%; padding:12px; margin-top:16px; border-radius:10px;
+  background:linear-gradient(135deg,#7c3aed,#a78bfa);
+  border:none; color:white; font-size:14px; font-weight:700;
+  cursor:pointer; transition:.2s;
+}
+.login-box button:hover{transform:scale(1.02);}
+.error-msg{color:var(--red); font-size:12px; margin-top:10px; display:none;}
+
+/* MAIN CONTAINER */
 .main{
   max-width:1200px; margin:0 auto; padding:28px 24px;
   position:relative; z-index:1;
@@ -46,7 +76,6 @@ body{
 /* PAGE HEADER */
 .page-header{margin-bottom:24px;}
 .page-header h1{font-size:24px;font-weight:800;letter-spacing:-.5px;}
-/* subjudul dihapus */
 
 /* CONN BAR */
 .conn-bar{
@@ -63,7 +92,7 @@ body{
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 
 /* SUMMARY CHIPS - rata kiri */
-.summary-row{display:flex; gap:14px; margin-bottom:22px; justify-content:flex-start;} /* kiri */
+.summary-row{display:flex; gap:14px; margin-bottom:22px; justify-content:flex-start;}
 .summary-chip{
   flex:0 1 auto; min-width:140px;
   background:rgba(255,255,255,0.03); backdrop-filter:blur(10px);
@@ -263,9 +292,21 @@ body{
 
 <div class="particles"></div>
 
+<!-- ===== LOGIN OVERLAY ===== -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>🔐 Akses Terbatas</h2>
+    <p>Masukkan password untuk melanjutkan</p>
+    <input type="password" id="loginPassword" placeholder="Password" onkeydown="if(event.key==='Enter')checkLogin()">
+    <button onclick="checkLogin()">Masuk</button>
+    <div class="error-msg" id="loginError">Password salah!</div>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
-<div class="main">
+<!-- ===== MAIN DASHBOARD (tersembunyi sebelum login) ===== -->
+<div class="main" id="dashboardMain" style="display:none;">
 
   <div class="page-header">
     <h1>Dashboard</h1>
@@ -423,6 +464,31 @@ body{
 </div><!-- end main -->
 
 <script>
+// ===== PASSWORD CONFIG =====
+const PASSWORD_HASH = CryptoJS.SHA256("dryingsmart").toString();
+const LOGIN_KEY = "smart_drying_logged_in";
+
+function checkLogin(){
+  const pwd = document.getElementById('loginPassword').value;
+  const hash = CryptoJS.SHA256(pwd).toString();
+  if(hash === PASSWORD_HASH){
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('dashboardMain').style.display = 'block';
+    localStorage.setItem(LOGIN_KEY, 'true');
+    if(!mqttClient) connectMQTT();
+    document.getElementById('loginError').style.display = 'none';
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+
+(function(){
+  if(localStorage.getItem(LOGIN_KEY) === 'true'){
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('dashboardMain').style.display = 'block';
+  }
+})();
+
 // ===== MQTT CONFIG =====
 const MQTT_BROKER_WS='wss://broker.hivemq.com:8884/mqtt';
 const MQTT_CLIENT_ID='SmartDrying_Web_'+Math.random().toString(36).substr(2,6);
@@ -437,6 +503,7 @@ const state={
   ldr:0, kondisi:'--', fanPwm:0,
   modeJemuran:'AUTO', targetJemuran:'keluar', cmdJemuran:'keluar',
   modeFan:'AUTO', targetFan:'OFF',
+  tempStatus:'--', rainStatus:'--', ldrStatus:'--',  // dari ESP32
   esp32Online:false, mqttConnected:false
 };
 let tempMin=999, tempMax=-999;
@@ -492,6 +559,10 @@ function handleMessage(topic,msg){
       state.ldr=parseInt(d.ldr)||0;
       state.kondisi=d.kondisi||'--';
       state.fanPwm=parseInt(d.fanPwm)||0;
+      // Status fuzzy dari ESP32
+      state.tempStatus = d.tempStatus || '--';
+      state.rainStatus = d.rainStatus || '--';
+      state.ldrStatus  = d.ldrStatus  || '--';
       if(!jemuranIsManual){
         if(d.modeJemuran) state.modeJemuran=d.modeJemuran;
         if(d.targetJemuran) state.targetJemuran=d.targetJemuran;
@@ -566,35 +637,46 @@ function updateSidebarStatus(){
 }
 
 function updateUI(){
-  const{temp,rainAvg,ldr,kondisi,cmdJemuran,targetFan,fanPwm}=state;
+  const{temp,rainAvg,ldr,kondisi,cmdJemuran,targetFan,fanPwm,tempStatus,rainStatus,ldrStatus}=state;
 
-  // Temp card
+  // Temp card - menggunakan status dari ESP32
   document.getElementById('tempValue').innerHTML=temp.toFixed(1)+'<span class="unit">°C</span>';
   const tb=document.getElementById('tempBadge');
-  if(temp<20){tb.className='s-badge badge-dingin';tb.textContent='DINGIN';}
-  else if(temp<=30){tb.className='s-badge badge-normal';tb.textContent='NORMAL';}
-  else{tb.className='s-badge badge-panas';tb.textContent='PANAS';}
   const ct=document.getElementById('cardTemp');
-  if(temp<20)ct.style.setProperty('--card-glow','rgba(147,197,253,.12)');
-  else if(temp<=30)ct.style.setProperty('--card-glow','rgba(110,231,183,.12)');
-  else ct.style.setProperty('--card-glow','rgba(253,186,116,.14)');
+  if(tempStatus==='DINGIN'){
+    tb.className='s-badge badge-dingin'; tb.textContent='DINGIN';
+    ct.style.setProperty('--card-glow','rgba(147,197,253,.12)');
+  } else if(tempStatus==='NORMAL'){
+    tb.className='s-badge badge-normal'; tb.textContent='NORMAL';
+    ct.style.setProperty('--card-glow','rgba(110,231,183,.12)');
+  } else if(tempStatus==='PANAS'){
+    tb.className='s-badge badge-panas'; tb.textContent='PANAS';
+    ct.style.setProperty('--card-glow','rgba(253,186,116,.14)');
+  } else {
+    tb.className='s-badge badge-dingin'; tb.textContent=tempStatus;
+    ct.style.setProperty('--card-glow','rgba(167,139,250,.1)');
+  }
 
-  // Rain card
+  // Rain card - status dari ESP32
   document.getElementById('rainValue').innerHTML=rainAvg+'<span class="unit" style="font-size:15px;">avg</span>';
   const rb=document.getElementById('rainBadge');
-  if(kondisi.includes('HUJAN DERAS')){rb.className='s-badge badge-hujan-deras';rb.textContent='HUJAN DERAS';}
-  else if(kondisi.includes('HUJAN RINTIK')){rb.className='s-badge badge-hujan-rintik';rb.textContent='HUJAN RINTIK';}
-  else if(kondisi==='GERIMIS'){rb.className='s-badge badge-gerimis';rb.textContent='GERIMIS';}
-  else{rb.className='s-badge badge-cerah';rb.textContent='CERAH';}
+  const cr=document.getElementById('cardRain');
+  if(rainStatus==='HUJAN DERAS'){ rb.className='s-badge badge-hujan-deras'; rb.textContent='HUJAN DERAS'; cr.style.setProperty('--card-glow','rgba(239,68,68,.2)');}
+  else if(rainStatus==='HUJAN RINTIK'){ rb.className='s-badge badge-hujan-rintik'; rb.textContent='HUJAN RINTIK'; cr.style.setProperty('--card-glow','rgba(251,146,60,.2)');}
+  else if(rainStatus==='GERIMIS'){ rb.className='s-badge badge-gerimis'; rb.textContent='GERIMIS'; cr.style.setProperty('--card-glow','rgba(251,191,36,.2)');}
+  else if(rainStatus==='CERAH'){ rb.className='s-badge badge-cerah'; rb.textContent='CERAH'; cr.style.setProperty('--card-glow','rgba(52,211,153,.2)');}
+  else { rb.className='s-badge badge-aman'; rb.textContent=rainStatus; }
 
-  // LDR card
+  // LDR card - status dari ESP32
   document.getElementById('ldrValue').innerHTML=ldr+'<span class="unit" style="font-size:15px;">lux</span>';
   const lb=document.getElementById('ldrBadge');
-  if(ldr<1000){lb.className='s-badge badge-gelap';lb.textContent='GELAP';}
-  else if(ldr<=3200){lb.className='s-badge badge-mendung';lb.textContent='MENDUNG';}
-  else{lb.className='s-badge badge-terang';lb.textContent='TERANG';}
+  const cl=document.getElementById('cardLdr');
+  if(ldrStatus==='GELAP'){ lb.className='s-badge badge-gelap'; lb.textContent='GELAP'; cl.style.setProperty('--card-glow','rgba(99,102,241,.2)');}
+  else if(ldrStatus==='MENDUNG'){ lb.className='s-badge badge-mendung'; lb.textContent='MENDUNG'; cl.style.setProperty('--card-glow','rgba(148,163,184,.2)');}
+  else if(ldrStatus==='TERANG'){ lb.className='s-badge badge-terang'; lb.textContent='TERANG'; cl.style.setProperty('--card-glow','rgba(250,204,21,.2)');}
+  else { lb.className='s-badge badge-gelap'; lb.textContent=ldrStatus; }
 
-  // Jemuran toggle
+  // Jemuran & fan toggle
   const isAutoJ=!jemuranIsManual;
   document.getElementById('jemuranModeToggle').checked=isAutoJ;
   document.getElementById('jemuranAutoLabel').className=isAutoJ?'active-mode':'';
@@ -603,7 +685,6 @@ function updateUI(){
   document.getElementById('btnKeluar').disabled=isAutoJ;
   document.getElementById('jemuranModeInfo').textContent=isAutoJ?'Mode AUTO — fuzzy ESP32':'Mode MANUAL — kontrol dari web';
 
-  // Fan toggle
   const isAutoF=!fanIsManual;
   document.getElementById('fanModeToggle').checked=isAutoF;
   document.getElementById('fanAutoLabel').className=isAutoF?'active-mode':'';
@@ -611,17 +692,14 @@ function updateUI(){
   document.getElementById('btnFan').disabled=isAutoF;
   document.getElementById('fanSubText').textContent=isAutoF?'Mode AUTO — fuzzy ESP32':'Mode MANUAL — kontrol dari web';
 
-  // Visual jemuran: pakai cmdJemuran langsung, abaikan 'diam' hanya jika tidak berubah
   let visualPos = cmdJemuran;
   if (visualPos === 'diam') visualPos = lastVisualPos;
   else lastVisualPos = visualPos;
   updateJemuranVisual(visualPos);
 
-  // Fan visual: ON jika fanPwm > 0
   const fanOn = fanPwm > 0;
   updateFanVisual(fanOn ? 'ON' : 'OFF', fanPwm);
 
-  // Info jemuran
   document.getElementById('jemuranAksi').textContent=cmdJemuran.toUpperCase();
   document.getElementById('jemuranTarget').textContent=state.targetJemuran.toUpperCase();
 }
@@ -695,7 +773,9 @@ function addLog(msg){
 
 // ===== INIT =====
 document.getElementById('logInitTime').textContent=new Date().toLocaleTimeString('id-ID');
-connectMQTT();
+if(localStorage.getItem(LOGIN_KEY)==='true') connectMQTT();
 </script>
 </body>
 </html>
+HTMLEOF
+echo "file size: $(wc -c < /home/claude/smart_drying_v2.html) bytes"
