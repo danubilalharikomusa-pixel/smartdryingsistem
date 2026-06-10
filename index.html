@@ -692,25 +692,25 @@ function updateUI(){
   const lVal=lMap[ldrStatus]||['badge-gelap',ldrStatus||'--'];
   lb.className='s-badge '+lVal[0]; lb.textContent=lVal[1];
 
- // Fan section - PERBAIKAN
-let isAutoF = !fanIsManual;
-document.getElementById('fanModeToggle').checked = isAutoF;
-document.getElementById('fanAutoLabel').className = isAutoF ? 'active-mode' : '';
-document.getElementById('fanManualLabel').className = isAutoF ? '' : 'active-mode';
-document.getElementById('btnFan').disabled = isAutoF;
+  const isAutoJ=!jemuranIsManual;
+  document.getElementById('jemuranModeToggle').checked=isAutoJ;
+  document.getElementById('jemuranAutoLabel').className=isAutoJ?'active-mode':'';
+  document.getElementById('jemuranManualLabel').className=isAutoJ?'':'active-mode';
+  document.getElementById('btnMasuk').disabled=isAutoJ;
+  document.getElementById('btnKeluar').disabled=isAutoJ;
+  document.getElementById('jemuranModeInfo').textContent=isAutoJ?'Mode AUTO — fuzzy ESP32':'Mode MANUAL — kontrol dari web';
 
-let fanState;
-let fanPwmDisplay = state.fanPwm;
-if (isAutoF) {
-  // Mode AUTO: fan menyala jika fanPwm > 0
-  fanState = (state.fanPwm > 0) ? 'ON' : 'OFF';
-  fanPwmDisplay = state.fanPwm;
-} else {
-  // Mode MANUAL
-  fanState = manualFanTarget;
-  fanPwmDisplay = (manualFanTarget === 'ON') ? 255 : 0;
+  const isAutoF=!fanIsManual;
+  document.getElementById('fanModeToggle').checked=isAutoF;
+  document.getElementById('fanAutoLabel').className=isAutoF?'active-mode':'';
+  document.getElementById('fanManualLabel').className=isAutoF?'':'active-mode';
+  document.getElementById('btnFan').disabled=isAutoF;
+  document.getElementById('fanSubText').textContent=isAutoF?'Mode AUTO — fuzzy ESP32':'Mode MANUAL — kontrol dari web';
+
+  updateJemuranVisual(isAutoJ?targetJemuran:manualJemuranTarget);
+  updateFanVisual(isAutoF?targetFan:manualFanTarget,fanPwm);
 }
-updateFanVisual(fanState, fanPwmDisplay);
+
 function updateJemuranVisual(pos){
   const ids=['baju1','baju2','baju3','baju4','baju5'];
   const label=document.getElementById('jemuranSVGLabel');
