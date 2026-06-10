@@ -27,53 +27,37 @@ body{
   color:var(--text);min-height:100vh;
 }
 
-/* ===== LOGIN OVERLAY ===== */
+/* ===== LOGIN ===== */
 #loginOverlay{
   position:fixed;inset:0;z-index:9999;
   display:flex;align-items:center;justify-content:center;
   background:var(--bg);
-  background-image:radial-gradient(rgba(168,85,247,0.055) 1px,transparent 1px);
-  background-size:28px 28px;
 }
 .login-box{
   width:100%;max-width:380px;
   background:rgba(13,17,23,0.95);
   border:1px solid rgba(168,85,247,.2);
-  border-radius:20px;
-  padding:36px 32px;
-  margin:16px;
+  border-radius:20px;padding:36px 32px;margin:16px;
 }
-.login-logo{
-  display:flex;align-items:center;justify-content:center;gap:10px;
-  margin-bottom:28px;
-}
+.login-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:28px;}
 .login-logo-icon{
   width:44px;height:44px;border-radius:12px;
   background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.25);
   display:flex;align-items:center;justify-content:center;font-size:22px;
 }
-.login-logo-text{font-size:18px;font-weight:800;letter-spacing:-.3px;}
+.login-logo-text{font-size:18px;font-weight:800;}
 .login-logo-text span{color:var(--purple);}
-.login-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.login-title{font-size:14px;font-weight:600;margin-bottom:4px;}
 .login-sub{font-size:12px;color:var(--muted);margin-bottom:24px;}
 .login-field{margin-bottom:14px;}
 .login-field label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px;}
-.login-input-wrap{position:relative;}
 .login-input{
   width:100%;background:rgba(255,255,255,.04);
   border:1px solid rgba(255,255,255,.1);
-  border-radius:10px;padding:11px 42px 11px 14px;
-  color:var(--text);font-size:14px;font-family:'Poppins',sans-serif;
-  outline:none;transition:.2s;
+  border-radius:10px;padding:11px 14px;
+  color:var(--text);font-size:14px;outline:none;
 }
-.login-input:focus{border-color:rgba(168,85,247,.5);background:rgba(168,85,247,.04);}
-.login-input::placeholder{color:var(--muted);}
-.toggle-pw{
-  position:absolute;right:12px;top:50%;transform:translateY(-50%);
-  background:none;border:none;cursor:pointer;color:var(--muted);
-  display:flex;align-items:center;padding:2px;transition:.2s;
-}
-.toggle-pw:hover{color:var(--text);}
+.login-input:focus{border-color:rgba(168,85,247,.5);}
 .login-error{
   display:none;align-items:center;gap:7px;
   background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);
@@ -85,34 +69,18 @@ body{
   width:100%;padding:12px;border:none;border-radius:10px;
   background:linear-gradient(135deg,#7c3aed,#a855f7);
   color:white;font-size:14px;font-weight:700;cursor:pointer;
-  transition:.2s;margin-top:4px;letter-spacing:.2px;
 }
-.login-btn:hover{opacity:.9;transform:translateY(-1px);}
-.login-btn:active{transform:scale(.98);}
-.login-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-.login-footer{margin-top:20px;text-align:center;font-size:11px;color:var(--muted);}
-.login-footer span{color:rgba(168,85,247,.6);}
-
-/* shake animation */
+.login-btn:hover{opacity:.9;}
 @keyframes shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-6px);}40%,80%{transform:translateX(6px);}}
 .shake{animation:shake .35s ease;}
-
-/* fade out login */
 @keyframes fadeOut{to{opacity:0;pointer-events:none;}}
 .fade-out{animation:fadeOut .4s ease forwards;}
 
 /* MAIN */
-.main{
-  max-width:1100px;
-  margin:0 auto;
-  padding:32px 28px;
-  display:none;
-}
+.main{max-width:1100px;margin:0 auto;padding:32px 28px;display:none;}
 .main.visible{display:block;}
-
-/* PAGE HEADER */
 .page-header{margin-bottom:22px;}
-.page-header h1{font-size:24px;font-weight:800;letter-spacing:-.5px;}
+.page-header h1{font-size:24px;font-weight:800;}
 
 /* CONN BAR */
 .conn-bar{
@@ -127,66 +95,49 @@ body{
 .conn-dot.connecting{background:var(--yellow);box-shadow:0 0 6px var(--yellow);animation:pulse 1s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 
-/* ESP32 CHIP */
+/* ESP32 */
 .esp-chip{
   display:inline-flex;align-items:center;gap:13px;
   background:rgba(13,17,23,0.7);border:1px solid var(--border);
-  border-radius:14px;padding:14px 18px;
-  margin-bottom:20px;transition:.2s;
+  border-radius:14px;padding:14px 18px;margin-bottom:20px;
 }
-.esp-chip:hover{border-color:rgba(168,85,247,.2);}
 .chip-icon{
   width:36px;height:36px;border-radius:10px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:17px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:17px;
   background:rgba(6,182,212,.1);
 }
-.chip-text .lbl{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px;}
-.chip-text .val{font-size:15px;font-weight:700;margin-top:2px;line-height:1.2;}
+.chip-text .lbl{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;}
+.chip-text .val{font-size:15px;font-weight:700;margin-top:2px;}
 .chip-text .sub{font-size:10px;color:var(--muted);margin-top:1px;}
 
 /* SENSOR GRID */
 .sensor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;}
 .sensor-card{
   background:rgba(13,17,23,0.8);border-radius:18px;
-  padding:22px;border:1px solid var(--border);
-  transition:.25s;position:relative;overflow:hidden;
+  padding:22px;border:1px solid var(--border);position:relative;overflow:hidden;
 }
 .sensor-card::before{
   content:'';position:absolute;
   top:-50px;right:-50px;width:140px;height:140px;
   border-radius:50%;
-  background:var(--card-glow,rgba(168,85,247,0.05));
+  background:var(--card-glow,rgba(168,85,247,.05));
   filter:blur(35px);pointer-events:none;
 }
-.sensor-card:hover{transform:translateY(-3px);border-color:rgba(168,85,247,.25);}
-
 .s-icon-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
 .s-icon-box{
   width:34px;height:34px;border-radius:9px;
   display:flex;align-items:center;justify-content:center;
 }
-.s-icon-box svg{width:16px;height:16px;}
 .s-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;}
 .s-value{font-size:48px;font-weight:800;line-height:1;margin-bottom:14px;letter-spacing:-2px;}
-.s-value .unit{font-size:17px;font-weight:400;color:var(--muted);letter-spacing:0;margin-left:2px;}
+.s-value .unit{font-size:17px;font-weight:400;color:var(--muted);}
 .s-badge{
   display:inline-flex;align-items:center;
   padding:4px 11px;border-radius:7px;
   font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
   border:1px solid;
 }
-
-/* BADGE COLORS */
-.badge-dingin{background:rgba(59,130,246,.1);color:#60a5fa;border-color:rgba(59,130,246,.2);}
-.badge-normal{background:rgba(16,185,129,.1);color:#34d399;border-color:rgba(16,185,129,.2);}
-.badge-panas{background:rgba(249,115,22,.1);color:#fb923c;border-color:rgba(249,115,22,.2);}
-.badge-aman{background:rgba(16,185,129,.1);color:#34d399;border-color:rgba(16,185,129,.2);}
-.badge-gerimis{background:rgba(245,158,11,.1);color:#fbbf24;border-color:rgba(245,158,11,.2);}
-.badge-hujan{background:rgba(239,68,68,.1);color:#f87171;border-color:rgba(239,68,68,.2);}
-.badge-gelap{background:rgba(99,102,241,.1);color:#818cf8;border-color:rgba(99,102,241,.2);}
-.badge-mendung{background:rgba(148,163,184,.1);color:#94a3b8;border-color:rgba(148,163,184,.2);}
-.badge-terang{background:rgba(250,204,21,.1);color:#fde047;border-color:rgba(250,204,21,.2);}
+.badge-raw{background:rgba(168,85,247,.1);color:#a855f7;border-color:rgba(168,85,247,.2);}
 
 /* SYSTEM GRID */
 .system-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
@@ -195,8 +146,7 @@ body{
   padding:22px;border:1px solid var(--border);
 }
 .sc-header{
-  display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:18px;
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;
 }
 .sc-header h3{font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.8px;}
 
@@ -221,6 +171,7 @@ body{
   text-align:center;font-size:11px;font-weight:700;
   margin-bottom:10px;padding:4px 14px;border-radius:7px;
   display:inline-block;border:1px solid;
+  color:#fbbf24;background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.25);
 }
 .info-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;}
 .info-row:last-child{border-bottom:none;}
@@ -230,25 +181,19 @@ body{
 .btn-masuk{
   padding:10px;border:none;border-radius:9px;
   background:linear-gradient(135deg,#991b1b,#ef4444);
-  color:white;font-size:12px;font-weight:700;cursor:pointer;transition:.2s;
-  display:flex;align-items:center;justify-content:center;gap:5px;
+  color:white;font-size:12px;font-weight:700;cursor:pointer;
 }
 .btn-keluar{
   padding:10px;border:none;border-radius:9px;
   background:linear-gradient(135deg,#065f46,#10b981);
-  color:white;font-size:12px;font-weight:700;cursor:pointer;transition:.2s;
-  display:flex;align-items:center;justify-content:center;gap:5px;
+  color:white;font-size:12px;font-weight:700;cursor:pointer;
 }
 .btn-masuk:hover,.btn-keluar:hover{transform:scale(1.03);}
 .btn-masuk:disabled,.btn-keluar:disabled{opacity:.35;cursor:not-allowed;transform:none;}
 
 /* FAN */
 .fan-wrap{display:flex;flex-direction:column;align-items:center;padding:12px 0 16px;}
-.fan-rings{
-  position:relative;width:108px;height:108px;
-  display:flex;align-items:center;justify-content:center;
-  margin-bottom:14px;
-}
+.fan-rings{position:relative;width:108px;height:108px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
 .fan-ring{position:absolute;border-radius:50%;border:1.5px solid rgba(6,182,212,.18);}
 .fan-ring.r1{width:108px;height:108px;}
 .fan-ring.r2{width:78px;height:78px;}
@@ -270,7 +215,7 @@ body{
 .btn-fan{
   width:100%;padding:10px;border:none;border-radius:9px;
   background:linear-gradient(135deg,#7c3aed,#a855f7);
-  color:white;font-size:12px;font-weight:700;cursor:pointer;transition:.2s;margin-top:13px;
+  color:white;font-size:12px;font-weight:700;cursor:pointer;margin-top:13px;
 }
 .btn-fan:hover{transform:scale(1.02);}
 .btn-fan:disabled{opacity:.35;cursor:not-allowed;transform:none;}
@@ -302,14 +247,12 @@ body{
   .sensor-grid{grid-template-columns:1fr;}
   .system-grid{grid-template-columns:1fr;}
   .s-value{font-size:40px;}
-  .esp-chip{width:100%;}
-  .login-box{padding:28px 20px;}
 }
 </style>
 </head>
 <body>
 
-<!-- ===== LOGIN OVERLAY ===== -->
+<!-- ===== LOGIN ===== -->
 <div id="loginOverlay">
   <div class="login-box" id="loginBox">
     <div class="login-logo">
@@ -318,49 +261,28 @@ body{
     </div>
     <div class="login-title">Selamat datang</div>
     <div class="login-sub">Masukkan password untuk mengakses dashboard</div>
-
     <div class="login-error" id="loginError">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <span id="loginErrorMsg">Password salah. Coba lagi.</span>
     </div>
-
     <div class="login-field">
-      <label for="pwInput">Password</label>
-      <div class="login-input-wrap">
-        <input
-          class="login-input"
-          type="password"
-          id="pwInput"
-          placeholder="Masukkan password..."
-          autocomplete="current-password"
-          onkeydown="if(event.key==='Enter')doLogin()"
-        >
-        <button class="toggle-pw" onclick="togglePwVisibility()" id="togglePwBtn" title="Tampilkan/sembunyikan password">
-          <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-      </div>
+      <label>Password</label>
+      <input class="login-input" type="password" id="pwInput" placeholder="Masukkan password..." onkeydown="if(event.key==='Enter')doLogin()">
     </div>
-
-    <button class="login-btn" id="loginBtn" onclick="doLogin()">
-      Masuk ke Dashboard
-    </button>
-
-    <div class="login-footer">
-      Smart Drying System &mdash; <span>IoT Dashboard</span>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Masuk ke Dashboard</button>
+    <div class="login-sub" style="margin-top:20px;text-align:center;">
+      Smart Drying System — IoT Dashboard
     </div>
   </div>
 </div>
 
 <!-- ===== DASHBOARD ===== -->
 <div class="main" id="dashMain">
+  <div class="page-header"><h1>Dashboard</h1></div>
 
-  <div class="page-header">
-    <h1>Dashboard</h1>
-  </div>
-
+  <!-- Connection Status -->
   <div class="conn-bar">
     <div class="conn-dot connecting" id="connDot"></div>
-    <span id="connText">Menghubungkan ke MQTT broker...</span>
+    <span id="connText">Menghubungkan ke MQTT...</span>
   </div>
 
   <!-- ESP32 Status -->
@@ -368,399 +290,4 @@ body{
     <div class="chip-icon">⚡</div>
     <div class="chip-text">
       <div class="lbl">ESP32</div>
-      <div class="val" id="esp32Val" style="color:#94a3b8;">Offline</div>
-      <div class="sub" id="esp32Sub">Belum ada sinyal</div>
-    </div>
-  </div>
-
-  <!-- Sensor Cards -->
-  <div class="sensor-grid">
-
-    <div class="sensor-card" id="cardTemp" style="--card-glow:rgba(168,85,247,.1);">
-      <div class="s-icon-row">
-        <div class="s-icon-box" style="background:rgba(168,85,247,.1);">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
-        </div>
-        <span class="s-label">Temperature</span>
-      </div>
-      <div class="s-value" id="tempValue">--<span class="unit">°C</span></div>
-      <div id="tempBadge" class="s-badge badge-dingin">--</div>
-    </div>
-
-    <div class="sensor-card" id="cardRain" style="--card-glow:rgba(6,182,212,.1);">
-      <div class="s-icon-row">
-        <div class="s-icon-box" style="background:rgba(6,182,212,.1);">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><path d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9"/><polyline points="16 13 12 17 8 13"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        </div>
-        <span class="s-label">Rain Sensor</span>
-      </div>
-      <div class="s-value" id="rainValue" style="font-size:42px;">--<span class="unit" style="font-size:14px;">avg</span></div>
-      <div id="rainBadge" class="s-badge badge-aman">--</div>
-    </div>
-
-    <div class="sensor-card" id="cardLdr" style="--card-glow:rgba(250,204,21,.1);">
-      <div class="s-icon-row">
-        <div class="s-icon-box" style="background:rgba(250,204,21,.1);">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-        </div>
-        <span class="s-label">Light (LDR)</span>
-      </div>
-      <div class="s-value" id="ldrValue" style="font-size:42px;">--<span class="unit" style="font-size:14px;">lux</span></div>
-      <div id="ldrBadge" class="s-badge badge-gelap">--</div>
-    </div>
-
-  </div>
-
-  <!-- System Grid -->
-  <div class="system-grid">
-
-    <!-- JEMURAN -->
-    <div class="system-card">
-      <div class="sc-header">
-        <h3>Status Jemuran</h3>
-        <div class="mode-toggle">
-          <span id="jemuranAutoLabel" class="active-mode">AUTO</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="jemuranModeToggle" onchange="toggleJemuranMode()" checked>
-            <span class="toggle-slider"></span>
-          </label>
-          <span id="jemuranManualLabel">MANUAL</span>
-        </div>
-      </div>
-      <div class="jemuran-visual">
-        <div class="jemuran-wrap">
-          <svg id="jemuranSVG" width="228" height="146" viewBox="0 0 240 155">
-            <rect x="12" y="20" width="8" height="120" rx="3" fill="#4c1d95"/>
-            <rect x="8" y="16" width="16" height="7" rx="2" fill="#7c3aed"/>
-            <rect x="220" y="20" width="8" height="120" rx="3" fill="#4c1d95"/>
-            <rect x="216" y="16" width="16" height="7" rx="2" fill="#7c3aed"/>
-            <line x1="20" y1="34" x2="220" y2="34" stroke="#a855f7" stroke-width="2.5" stroke-linecap="round"/>
-            <g id="baju1" style="transition:all .7s ease;"><line x1="50" y1="34" x2="50" y2="26" stroke="#a855f7" stroke-width="1.5"/><polygon points="50,26 37,43 42,43 42,72 58,72 58,43 63,43" fill="#60a5fa" stroke="#3b82f6" stroke-width="1"/></g>
-            <g id="baju2" style="transition:all .7s ease;"><line x1="88" y1="34" x2="88" y2="26" stroke="#a855f7" stroke-width="1.5"/><polygon points="88,26 75,43 80,43 80,72 96,72 96,43 101,43" fill="#818cf8" stroke="#6366f1" stroke-width="1"/></g>
-            <g id="baju3" style="transition:all .7s ease;"><line x1="126" y1="34" x2="126" y2="26" stroke="#a855f7" stroke-width="1.5"/><rect x="116" y="26" width="20" height="24" rx="2" fill="#f87171" stroke="#ef4444" stroke-width="1"/><rect x="116" y="50" width="8" height="20" rx="2" fill="#f87171" stroke="#ef4444" stroke-width="1"/><rect x="128" y="50" width="8" height="20" rx="2" fill="#f87171" stroke="#ef4444" stroke-width="1"/></g>
-            <g id="baju4" style="transition:all .7s ease;"><line x1="164" y1="34" x2="164" y2="26" stroke="#a855f7" stroke-width="1.5"/><polygon points="164,26 153,41 157,41 157,68 171,68 171,41 175,41" fill="#4ade80" stroke="#22c55e" stroke-width="1"/></g>
-            <g id="baju5" style="transition:all .7s ease;"><line x1="198" y1="34" x2="198" y2="26" stroke="#a855f7" stroke-width="1.5"/><polygon points="198,26 188,40 192,40 192,65 204,65 204,40 208,40" fill="#fbbf24" stroke="#f59e0b" stroke-width="1"/></g>
-            <text id="jemuranSVGLabel" x="120" y="148" text-anchor="middle" font-size="12" font-weight="700" font-family="Poppins,sans-serif" fill="#4ade80">KELUAR</text>
-          </svg>
-        </div>
-      </div>
-      <div style="text-align:center;margin-bottom:10px;">
-        <div class="pos-badge" id="positionBadge" style="color:#fbbf24;background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.25);">POSISI: KELUAR</div>
-      </div>
-      <div class="info-row"><span class="l">Target</span><span class="v" id="jemuranTarget">--</span></div>
-      <div class="info-row"><span class="l">ESP32 Pos</span><span class="v" id="jemuranEsp32Pos">--</span></div>
-      <div class="info-row"><span class="l" id="jemuranModeInfo" style="font-size:11px;color:var(--muted);">Mode AUTO — fuzzy ESP32</span></div>
-      <div class="btn-row">
-        <button class="btn-masuk" id="btnMasuk" onclick="cmdJemuran('masuk')" disabled>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>MASUK
-        </button>
-        <button class="btn-keluar" id="btnKeluar" onclick="cmdJemuran('keluar')" disabled>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>KELUAR
-        </button>
-      </div>
-    </div>
-
-    <!-- FAN -->
-    <div class="system-card">
-      <div class="sc-header">
-        <h3>Exhaust Fan</h3>
-        <div class="mode-toggle">
-          <span id="fanAutoLabel" class="active-mode">AUTO</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="fanModeToggle" onchange="toggleFanMode()" checked>
-            <span class="toggle-slider"></span>
-          </label>
-          <span id="fanManualLabel">MANUAL</span>
-        </div>
-      </div>
-      <div class="fan-wrap" id="fanContainer">
-        <div class="fan-rings">
-          <div class="fan-ring r1"></div>
-          <div class="fan-ring r2"></div>
-          <div class="fan-ring r3"></div>
-          <div class="fan-core">
-            <svg id="fanSVG" viewBox="0 0 24 24" fill="#06b6d4">
-              <path d="M12 2C9.8 2 8 3.8 8 6c0 1.7.9 3.1 2.3 3.8C9.1 8.7 7.5 8 5.5 8 3.5 8 2 9.5 2 11.5c0 2.4 2.3 4.2 4.7 3.6C5.5 16.2 5 17.5 5 19c0 1.7 1.3 3 3 3 1.2 0 2.3-.7 2.8-1.8.5 1.1 1.6 1.8 2.8 1.8 1.7 0 3-1.3 3-3 0-1.5-.5-2.8-1.7-3.9 2.4.6 4.7-1.2 4.7-3.6 0-2-1.5-3.5-3.5-3.5-2 0-3.6.7-4.8 1.8C12.9 9.1 13.8 7.7 13.8 6c0-2.2-1.8-4-4-4z"/>
-            </svg>
-          </div>
-        </div>
-        <div class="fan-status" id="fanStatusText" style="color:#f87171;">EXHAUST OFF</div>
-        <div class="fan-sub" id="fanSubText">Menunggu data ESP32...</div>
-        <div class="fan-sub" style="margin-top:3px;" id="fanPwmText">PWM: --</div>
-      </div>
-      <button class="btn-fan" id="btnFan" onclick="cmdFan()" disabled>ON / OFF FAN</button>
-    </div>
-
-  </div>
-
-  <!-- Log -->
-  <div class="log-card">
-    <h2>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-      Notification Log
-    </h2>
-    <div id="logList">
-      <div class="log-item">
-        <span class="log-time" id="logInitTime">--:--:--</span>
-        <span class="log-msg">System started — menunggu koneksi MQTT</span>
-      </div>
-    </div>
-  </div>
-
-</div><!-- end main -->
-
-<script>
-// ===== PASSWORD =====
-// Ganti nilai di bawah ini dengan password yang diinginkan
-const DASHBOARD_PASSWORD = 'smartdrying2025';
-
-let loginAttempts = 0;
-let lockUntil = 0;
-
-function togglePwVisibility(){
-  const inp = document.getElementById('pwInput');
-  const icon = document.getElementById('eyeIcon');
-  const isHidden = inp.type === 'password';
-  inp.type = isHidden ? 'text' : 'password';
-  icon.innerHTML = isHidden
-    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
-    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-}
-
-function showLoginError(msg){
-  const err = document.getElementById('loginError');
-  const errMsg = document.getElementById('loginErrorMsg');
-  errMsg.textContent = msg;
-  err.classList.add('show');
-  const box = document.getElementById('loginBox');
-  box.classList.remove('shake');
-  void box.offsetWidth;
-  box.classList.add('shake');
-}
-
-function doLogin(){
-  const now = Date.now();
-  if(now < lockUntil){
-    const sisa = Math.ceil((lockUntil - now) / 1000);
-    showLoginError('Terlalu banyak percobaan. Tunggu ' + sisa + ' detik.');
-    return;
-  }
-
-  const pw = document.getElementById('pwInput').value;
-  if(!pw){
-    showLoginError('Password tidak boleh kosong.');
-    return;
-  }
-
-  if(pw === DASHBOARD_PASSWORD){
-    document.getElementById('loginError').classList.remove('show');
-    document.getElementById('loginBtn').disabled = true;
-    document.getElementById('loginBtn').textContent = 'Membuka dashboard...';
-    const overlay = document.getElementById('loginOverlay');
-    overlay.classList.add('fade-out');
-    setTimeout(()=>{
-      overlay.style.display = 'none';
-      const main = document.getElementById('dashMain');
-      main.classList.add('visible');
-      // inisialisasi dashboard setelah login
-      document.getElementById('logInitTime').textContent = new Date().toLocaleTimeString('id-ID');
-      connectMQTT();
-    }, 420);
-  } else {
-    loginAttempts++;
-    if(loginAttempts >= 5){
-      lockUntil = Date.now() + 30000;
-      loginAttempts = 0;
-      showLoginError('Terlalu banyak percobaan. Tunggu 30 detik.');
-    } else {
-      const sisa = 5 - loginAttempts;
-      showLoginError('Password salah. ' + sisa + ' percobaan tersisa.');
-    }
-    document.getElementById('pwInput').value = '';
-    document.getElementById('pwInput').focus();
-  }
-}
-
-// ===== MQTT CONFIG =====
-const MQTT_BROKER_WS='wss://broker.hivemq.com:8884/mqtt';
-const MQTT_CLIENT_ID='SmartDrying_Web_'+Math.random().toString(36).substr(2,6);
-const TOPIC_SENSOR='smartdrying/sensor';
-const TOPIC_STATUS='smartdrying/status';
-const TOPIC_COMMAND='smartdrying/command';
-const TOPIC_ONLINE='smartdrying/online';
-
-// ===== STATE =====
-const state={temp:0,rainAvg:0,ldr:0,kondisi:'--',fanPwm:0,targetJemuran:'keluar',targetFan:'OFF',tempStatus:'--',rainStatus:'--',ldrStatus:'--',esp32Online:false,mqttConnected:false};
-let jemuranIsManual=false,fanIsManual=false;
-let manualJemuranTarget='keluar',manualFanTarget='OFF';
-let mqttClient=null;
-
-// ===== MQTT =====
-function connectMQTT(){
-  setConnStatus('connecting');
-  addLog('🔌 Menghubungkan ke MQTT broker...');
-  mqttClient=mqtt.connect(MQTT_BROKER_WS,{clientId:MQTT_CLIENT_ID,clean:true,reconnectPeriod:5000,connectTimeout:10000});
-  mqttClient.on('connect',()=>{
-    state.mqttConnected=true;setConnStatus('connected');
-    addLog('✅ MQTT terhubung ke broker.hivemq.com');
-    mqttClient.subscribe(TOPIC_SENSOR,{qos:0});
-    mqttClient.subscribe(TOPIC_STATUS,{qos:0});
-    mqttClient.subscribe(TOPIC_ONLINE,{qos:1});
-  });
-  mqttClient.on('message',(topic,payload)=>handleMessage(topic,payload.toString()));
-  mqttClient.on('disconnect',()=>{state.mqttConnected=false;state.esp32Online=false;setConnStatus('disconnected');addLog('⚠️ MQTT terputus, mencoba reconnect...');updateEsp32Chip();});
-  mqttClient.on('error',(err)=>{setConnStatus('disconnected');addLog('❌ MQTT error: '+err.message);});
-  mqttClient.on('reconnect',()=>{setConnStatus('connecting');addLog('🔄 Reconnecting MQTT...');});
-}
-
-function handleMessage(topic,msg){
-  if(topic===TOPIC_ONLINE){state.esp32Online=(msg==='1');updateEsp32Chip();if(state.esp32Online)addLog('📡 ESP32 online terdeteksi');return;}
-  if(topic===TOPIC_SENSOR){
-    try{
-      const d=JSON.parse(msg);
-      state.temp=parseFloat(d.temp)||0;
-      state.rainAvg=parseInt(d.rainAvg)||0;
-      state.ldr=parseInt(d.ldr)||0;
-      state.kondisi=d.kondisi||'--';
-      state.fanPwm=parseInt(d.fanPwm)||0;
-      state.tempStatus=(d.tempStatus||'').toUpperCase();
-      state.rainStatus=(d.rainStatus||d.kondisi||'').toUpperCase();
-      state.ldrStatus=(d.ldrStatus||'').toUpperCase();
-      if(!jemuranIsManual&&d.targetJemuran)state.targetJemuran=d.targetJemuran;
-      if(!fanIsManual&&d.targetFan)state.targetFan=d.targetFan;
-      state.esp32Online=true;
-      updateUI();
-      if(state.kondisi!==window._lastKondisi){addLog('🌤️ Kondisi: '+state.kondisi+' (rain avg: '+state.rainAvg+')');window._lastKondisi=state.kondisi;}
-      if(state.targetJemuran!==window._lastJemuran){addLog('🧺 Jemuran → '+state.targetJemuran.toUpperCase());window._lastJemuran=state.targetJemuran;}
-      updateEsp32Chip();
-    }catch(e){console.error('JSON:',e);}
-  }
-}
-
-function publishCommand(){
-  if(!mqttClient||!state.mqttConnected)return;
-  const mJ=jemuranIsManual?'MANUAL':'AUTO',mF=fanIsManual?'MANUAL':'AUTO';
-  const tJ=jemuranIsManual?manualJemuranTarget:state.targetJemuran;
-  const tF=fanIsManual?manualFanTarget:state.targetFan;
-  mqttClient.publish(TOPIC_COMMAND,mJ+','+tJ+','+mF+','+tF,{qos:1});
-}
-
-// ===== UI =====
-function setConnStatus(s){
-  const dot=document.getElementById('connDot'),text=document.getElementById('connText');
-  if(s==='connected'){dot.className='conn-dot connected';text.textContent='✅ MQTT Connected — broker.hivemq.com';}
-  else if(s==='connecting'){dot.className='conn-dot connecting';text.textContent='🔄 Menghubungkan ke broker.hivemq.com...';}
-  else{dot.className='conn-dot disconnected';text.textContent='❌ MQTT Disconnected — mencoba reconnect...';}
-}
-
-function updateEsp32Chip(){
-  const ev=document.getElementById('esp32Val'),es=document.getElementById('esp32Sub');
-  if(state.mqttConnected&&state.esp32Online){
-    ev.textContent='Online';ev.style.color='#34d399';
-    es.textContent='Data aktif diterima';
-  }else if(state.mqttConnected){
-    ev.textContent='Offline';ev.style.color='#fbbf24';
-    es.textContent='MQTT OK, ESP32 tidak ada';
-  }else{
-    ev.textContent='Offline';ev.style.color='#f87171';
-    es.textContent='Belum ada sinyal';
-  }
-}
-
-function updateUI(){
-  const{temp,rainAvg,ldr,kondisi,targetJemuran,targetFan,fanPwm,tempStatus,rainStatus,ldrStatus}=state;
-  document.getElementById('tempValue').innerHTML=temp.toFixed(1)+'<span class="unit">°C</span>';
-  const tb=document.getElementById('tempBadge');
-  const tMap={'DINGIN':['badge-dingin','DINGIN'],'NORMAL':['badge-normal','NORMAL'],'PANAS':['badge-panas','PANAS']};
-  const tVal=tMap[tempStatus]||['badge-dingin',tempStatus||'--'];
-  tb.className='s-badge '+tVal[0]; tb.textContent=tVal[1];
-  const ct=document.getElementById('cardTemp');
-  if(tempStatus==='DINGIN')ct.style.setProperty('--card-glow','rgba(96,165,250,.12)');
-  else if(tempStatus==='NORMAL')ct.style.setProperty('--card-glow','rgba(52,211,153,.12)');
-  else if(tempStatus==='PANAS')ct.style.setProperty('--card-glow','rgba(251,146,60,.14)');
-
-  document.getElementById('rainValue').innerHTML=rainAvg+'<span class="unit" style="font-size:14px;">avg</span>';
-  const rb=document.getElementById('rainBadge');
-  if(rainStatus.includes('HUJAN')){rb.className='s-badge badge-hujan';rb.textContent=rainStatus;}
-  else if(rainStatus.includes('GERIMIS')){rb.className='s-badge badge-gerimis';rb.textContent='GERIMIS';}
-  else if(rainStatus==='CERAH'||rainStatus==='AMAN'||rainStatus==='KERING'){rb.className='s-badge badge-aman';rb.textContent='AMAN';}
-  else{rb.className='s-badge badge-aman';rb.textContent=rainStatus||'--';}
-
-  document.getElementById('ldrValue').innerHTML=ldr+'<span class="unit" style="font-size:14px;">lux</span>';
-  const lb=document.getElementById('ldrBadge');
-  const lMap={'GELAP':['badge-gelap','GELAP'],'MENDUNG':['badge-mendung','MENDUNG'],'TERANG':['badge-terang','TERANG']};
-  const lVal=lMap[ldrStatus]||['badge-gelap',ldrStatus||'--'];
-  lb.className='s-badge '+lVal[0]; lb.textContent=lVal[1];
-
-  const isAutoJ=!jemuranIsManual;
-  document.getElementById('jemuranModeToggle').checked=isAutoJ;
-  document.getElementById('jemuranAutoLabel').className=isAutoJ?'active-mode':'';
-  document.getElementById('jemuranManualLabel').className=isAutoJ?'':'active-mode';
-  document.getElementById('btnMasuk').disabled=isAutoJ;
-  document.getElementById('btnKeluar').disabled=isAutoJ;
-  document.getElementById('jemuranModeInfo').textContent=isAutoJ?'Mode AUTO — fuzzy ESP32':'Mode MANUAL — kontrol dari web';
-
-  const isAutoF=!fanIsManual;
-  document.getElementById('fanModeToggle').checked=isAutoF;
-  document.getElementById('fanAutoLabel').className=isAutoF?'active-mode':'';
-  document.getElementById('fanManualLabel').className=isAutoF?'':'active-mode';
-  document.getElementById('btnFan').disabled=isAutoF;
-  document.getElementById('fanSubText').textContent=isAutoF?'Mode AUTO — fuzzy ESP32':'Mode MANUAL — kontrol dari web';
-
-  updateJemuranVisual(isAutoJ?targetJemuran:manualJemuranTarget);
-  updateFanVisual(isAutoF?targetFan:manualFanTarget,fanPwm);
-}
-
-function updateJemuranVisual(pos){
-  const ids=['baju1','baju2','baju3','baju4','baju5'];
-  const label=document.getElementById('jemuranSVGLabel');
-  const badge=document.getElementById('positionBadge');
-  if(pos==='masuk'){
-    ids.forEach(id=>{const el=document.getElementById(id);if(el){el.style.transform='translateY(-60px) scaleY(0.15)';el.style.opacity='0.1';}});
-    label.textContent='MASUK';label.setAttribute('fill','#f87171');
-    badge.textContent='POSISI: MASUK';badge.style.color='#f87171';badge.style.background='rgba(239,68,68,.08)';badge.style.borderColor='rgba(239,68,68,.25)';
-    document.getElementById('jemuranTarget').textContent='MASUK';
-    document.getElementById('jemuranEsp32Pos').textContent=state.esp32Online?'MASUK':'--';
-  }else{
-    ids.forEach(id=>{const el=document.getElementById(id);if(el){el.style.transform='';el.style.opacity='1';}});
-    label.textContent='KELUAR';label.setAttribute('fill','#4ade80');
-    badge.textContent='POSISI: KELUAR';badge.style.color='#fbbf24';badge.style.background='rgba(251,191,36,.08)';badge.style.borderColor='rgba(251,191,36,.25)';
-    document.getElementById('jemuranTarget').textContent='KELUAR';
-    document.getElementById('jemuranEsp32Pos').textContent=state.esp32Online?'KELUAR':'--';
-  }
-}
-
-function updateFanVisual(fanState,pwm){
-  const c=document.getElementById('fanContainer');
-  const st=document.getElementById('fanStatusText');
-  const pt=document.getElementById('fanPwmText');
-  if(fanState==='ON'){
-    c.className='fan-wrap fan-spinning';
-    st.textContent='EXHAUST ON';st.style.color='#34d399';
-    pt.textContent='PWM: '+(pwm||'--');
-  }else{
-    c.className='fan-wrap';
-    st.textContent='EXHAUST OFF';st.style.color='#f87171';
-    pt.textContent='PWM: 0';
-  }
-}
-
-// ===== CONTROLS =====
-function toggleJemuranMode(){jemuranIsManual=!document.getElementById('jemuranModeToggle').checked;addLog(jemuranIsManual?'🔧 Jemuran → Mode MANUAL':'🤖 Jemuran → Mode AUTO');updateUI();publishCommand();}
-function toggleFanMode(){fanIsManual=!document.getElementById('fanModeToggle').checked;addLog(fanIsManual?'🔧 Fan → Mode MANUAL':'🤖 Fan → Mode AUTO');updateUI();publishCommand();}
-function cmdJemuran(t){if(!jemuranIsManual)return;manualJemuranTarget=t;addLog('🧺 Perintah MANUAL: Jemuran → '+t.toUpperCase());updateUI();publishCommand();}
-function cmdFan(){if(!fanIsManual)return;manualFanTarget=(manualFanTarget==='ON')?'OFF':'ON';addLog('💨 Perintah MANUAL: Fan → '+manualFanTarget);updateUI();publishCommand();}
-
-// ===== LOG =====
-function addLog(msg){
-  const el=document.getElementById('logList');
-  const now=new Date();
-  const t=now.getHours()+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
-  const item=document.createElement('div');item.className='log-item';
-  item.innerHTML='<span class="log-time">'+t+'</span><span class="log-msg">'+msg+'</span>';
-  el.insertBefore(item,el.firstChild);
-  while(el.children.length>15)el.removeChild(el.lastChild);
-}
-</script>
-</body>
-</html>
+      <div class="val" id="esp32Val" style
