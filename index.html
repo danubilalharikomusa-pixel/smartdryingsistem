@@ -683,8 +683,8 @@ function updateUI(){
   const rb=document.getElementById('rainBadge');
   if(rainStatus.includes('HUJAN')){rb.className='s-badge badge-hujan';rb.textContent=rainStatus;}
   else if(rainStatus.includes('GERIMIS')){rb.className='s-badge badge-gerimis';rb.textContent='GERIMIS';}
-  else if(rainStatus==='CERAH'||rainStatus==='AMAN'||rainStatus==='KERING'){rb.className='s-badge badge-aman';rb.textContent='AMAN';}
-  else{rb.className='s-badge badge-aman';rb.textContent=rainStatus||'--';}
+  else if(rainStatus==='Normal'||rainStatus==='Normal'||rainStatus==='Normal'){rb.className='s-badge badge-aman';rb.textContent='AMAN';}
+  else{rb.className='s-badge badge-Normal';rb.textContent=rainStatus||'--';}
 
   document.getElementById('ldrValue').innerHTML=ldr+'<span class="unit" style="font-size:14px;">lux</span>';
   const lb=document.getElementById('ldrBadge');
